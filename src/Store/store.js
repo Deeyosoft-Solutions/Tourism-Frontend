@@ -11,9 +11,10 @@ import { registerApiSlice } from "../Services/registerApiSlice";
 import { cartApi } from "../Services/cartSlice";
 import { feedbackApi } from './../Services/feedbackApiSlice';
 import { destinationApi } from "../Services/destinationApiSlice";
-import { homestayApi } from "../Services/homestayApiSlice";
 import { travelPackageApi } from "../Services/travelPackageApiSlice";
 import { departuresApi } from "../Services/departuresApiSlice";
+import { accommodationCategoryApi } from "../Services/accomodationCategory.ApiSlice";
+import { accommodationApi } from "../Services/accomodationApiSlice";
 
 
 export const store = configureStore({
@@ -29,7 +30,8 @@ export const store = configureStore({
     [cartApi.reducerPath]: cartApi.reducer,
     [feedbackApi.reducerPath]:feedbackApi.reducer,
     [destinationApi.reducerPath]: destinationApi.reducer,
-    [homestayApi.reducerPath]: homestayApi.reducer,
+    [accommodationCategoryApi.reducerPath]: accommodationCategoryApi.reducer,
+    [accommodationApi.reducerPath]: accommodationApi.reducer,
     [travelPackageApi.reducerPath]: travelPackageApi.reducer,
     [departuresApi.reducerPath]: departuresApi.reducer, // add API reducer
     auth: authReducer,
@@ -47,7 +49,8 @@ export const store = configureStore({
       cartApi.middleware,
       feedbackApi.middleware,
       destinationApi.middleware,
-      homestayApi.middleware,
+      accommodationCategoryApi.middleware,
+      accommodationApi.middleware,
       travelPackageApi.middleware,
       departuresApi.middleware
     ),

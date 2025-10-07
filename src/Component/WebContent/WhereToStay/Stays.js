@@ -3,10 +3,10 @@ import ImageCarousel from "./ImageCarousel";
 import { useNavigate } from "react-router-dom";
 import PaginationControls from "../../PaginationControls";
 import RatingStars from "../../RatingStars";
-import { useGetHomestaysQuery } from "../../../Services/homestayApiSlice";
 import FilterComponent from "./FilterStays";
 import ErrorMessage from "../../ErrorMessage";
 import LoadingSpinner from "../../LoadingSpinner";
+import { useGetAccommodationsQuery } from "../../../Services/accomodationApiSlice";
 
 const Stays = () => {
   const [sort, setSort] = useState("recommended");
@@ -34,7 +34,7 @@ const Stays = () => {
   const navigate = useNavigate();
 
   // Fetch homestays from API
-  const { data: stays = [], isLoading, error } = useGetHomestaysQuery();
+  const { data: stays = [], isLoading, error } = useGetAccommodationsQuery();
 
   // Apply filters (basic example)
   const filteredStays = stays.filter((stay) => {

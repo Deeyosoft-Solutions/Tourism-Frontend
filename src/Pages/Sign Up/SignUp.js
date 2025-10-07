@@ -59,24 +59,32 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-red-600 py-4 px-6">
-          <h1 className="text-white text-2xl font-bold">User Registration</h1>
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-red-600 to-red-500 py-5 px-6 flex items-center justify-between">
+          <h1 className="text-white text-2xl font-bold tracking-wide">
+            User Registration
+          </h1>
         </div>
 
-        <form onSubmit={formik.handleSubmit} className="p-6">
+        {/* Form */}
+        <form
+          onSubmit={formik.handleSubmit}
+          className="p-8 space-y-10 bg-gray-50"
+        >
           {formik.status && (
-            <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+            <div className="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md shadow-sm">
               <p>{formik.status}</p>
             </div>
           )}
 
-          {/* Personal Information Section */}
+          {/* Personal Information */}
           <div className="mb-8">
-            <h2 className="text-gray-700 font-semibold text-lg mb-4 pb-2 border-b border-gray-200">
+            <h2 className="text-gray-800 font-semibold text-lg mb-4 pb-2 border-b-2 border-red-100">
               Personal Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* First Name */}
               <div>
                 <label
@@ -92,14 +100,14 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.firstName}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.firstName && formik.errors.firstName
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 />
                 {formik.touched.firstName && formik.errors.firstName && (
-                  <p className="text-red-500 text-xs italic mt-1">
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.firstName}
                   </p>
                 )}
@@ -120,7 +128,7 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.middleName}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 bg-gray-50 transition-all duration-150"
                 />
               </div>
 
@@ -139,14 +147,14 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.lastName}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.lastName && formik.errors.lastName
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 />
                 {formik.touched.lastName && formik.errors.lastName && (
-                  <p className="text-red-500 text-xs italic mt-1">
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.lastName}
                   </p>
                 )}
@@ -167,20 +175,20 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.email}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.email && formik.errors.email
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 />
                 {formik.touched.email && formik.errors.email && (
-                  <p className="text-red-500 text-xs italic mt-1">
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.email}
                   </p>
                 )}
               </div>
 
-              {/* ✅ Gender Selection (Dropdown) */}
+              {/* Gender */}
               <div className="md:col-span-2">
                 <label
                   className="block text-gray-700 text-sm font-bold mb-2"
@@ -194,11 +202,11 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.gender}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.gender && formik.errors.gender
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 >
                   <option value="" label="Select gender" />
                   <option value="MALE" label="Male" />
@@ -206,7 +214,7 @@ const RegisterPage = () => {
                   <option value="OTHERS" label="Other" />
                 </select>
                 {formik.touched.gender && formik.errors.gender && (
-                  <p className="text-red-500 text-xs italic mt-1">
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.gender}
                   </p>
                 )}
@@ -227,20 +235,19 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.phone}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.phone && formik.errors.phone
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 />
                 {formik.touched.phone && formik.errors.phone && (
-                  <p className="text-red-500 text-xs italic mt-1">
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.phone}
                   </p>
                 )}
               </div>
 
-              {/* ✅ Address (Optional) */}
               {/* Permanent Address */}
               <div className="md:col-span-2">
                 <label
@@ -257,7 +264,7 @@ const RegisterPage = () => {
                   onBlur={formik.handleBlur}
                   value={formik.values.permanentAddress}
                   placeholder="Enter permanent address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 bg-gray-50 transition-all duration-150"
                 />
               </div>
 
@@ -277,18 +284,19 @@ const RegisterPage = () => {
                   onBlur={formik.handleBlur}
                   value={formik.values.temporaryAddress}
                   placeholder="Enter temporary address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 bg-gray-50 transition-all duration-150"
                 />
               </div>
             </div>
           </div>
 
-          {/* Account Information Section */}
+          {/* Account Information */}
           <div className="mb-8">
-            <h2 className="text-gray-700 font-semibold text-lg mb-4 pb-2 border-b border-gray-200">
+            <h2 className="text-gray-800 font-semibold text-lg mb-4 pb-2 border-b-2 border-red-100">
               Account Information
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Username */}
               <div>
                 <label
                   className="block text-gray-700 text-sm font-bold mb-2"
@@ -303,19 +311,20 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.username}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.username && formik.errors.username
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 />
                 {formik.touched.username && formik.errors.username && (
-                  <p className="text-red-500 text-xs italic mt-1">
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.username}
                   </p>
                 )}
               </div>
 
+              {/* Password */}
               <div>
                 <label
                   className="block text-gray-700 text-sm font-bold mb-2"
@@ -330,19 +339,20 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.password}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.password && formik.errors.password
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 />
                 {formik.touched.password && formik.errors.password && (
-                  <p className="text-red-500 text-xs italic mt-1">
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.password}
                   </p>
                 )}
               </div>
 
+              {/* Confirm Password */}
               <div>
                 <label
                   className="block text-gray-700 text-sm font-bold mb-2"
@@ -357,16 +367,16 @@ const RegisterPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.confirmPassword}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full px-4 py-2.5 border ${
                     formik.touched.confirmPassword &&
                     formik.errors.confirmPassword
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
                 />
                 {formik.touched.confirmPassword &&
                   formik.errors.confirmPassword && (
-                    <p className="text-red-500 text-xs italic mt-1">
+                    <p className="text-red-500 text-xs italic mt-1 font-medium">
                       {formik.errors.confirmPassword}
                     </p>
                   )}
@@ -375,13 +385,13 @@ const RegisterPage = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-4">
             <button
               type="submit"
               disabled={isLoading || formik.isSubmitting}
-              className={`bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ${
+              className={`bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold py-2.5 px-8 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 transition-all duration-200 ${
                 isLoading || formik.isSubmitting
-                  ? "opacity-75 cursor-not-allowed"
+                  ? "opacity-70 cursor-not-allowed"
                   : ""
               }`}
             >

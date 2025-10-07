@@ -35,12 +35,13 @@ const CategoryType = () => {
     type: "",
   });
 
-  const filteredCategories =
-    categories?.filter((category) => {
-      const categoryName = category?.name || "";
-      const searchText = searchTerm || "";
-      return categoryName.toLowerCase().startsWith(searchText.toLowerCase());
-    }) || [];
+  const filteredCategories = (
+    Array.isArray(categories) ? categories : []
+  ).filter((category) => {
+    const categoryName = category?.name || "";
+    const searchText = searchTerm || "";
+    return categoryName.toLowerCase().startsWith(searchText.toLowerCase());
+  });
 
   const handleCreateCategory = async (newCategory) => {
     try {

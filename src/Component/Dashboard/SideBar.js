@@ -164,6 +164,26 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                                 {/* 👇 Rooms Submenu under Add Stay */}
                                 {staySub === "add" && isActiveStaySub && (
                                   <div className="ml-6 mt-1 flex flex-col space-y-1">
+                                    {/* 👇 Accommodation Type (only for Admin) */}
+                                    {isAdmin && (
+                                      <button
+                                        onClick={() =>
+                                          navigate(
+                                            `/dashboard/accomodations?view=stays&stay=add&type=true`
+                                          )
+                                        }
+                                        className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
+                                          new URLSearchParams(
+                                            window.location.search
+                                          ).get("type")
+                                            ? "text-red-500 font-medium"
+                                            : "text-gray-600 hover:text-red-500"
+                                        }`}
+                                      >
+                                        Accommodation Type
+                                      </button>
+                                    )}
+
                                     <button
                                       onClick={() =>
                                         navigate(
@@ -193,6 +213,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
               </div>
             </div>
           )}
+
           {(isAdmin || isTravelAgency) && (
             <div>
               <NavLink
