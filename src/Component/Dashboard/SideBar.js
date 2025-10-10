@@ -1,23 +1,24 @@
 import { FaClock } from "react-icons/fa";
 import { useDispatch } from "react-redux";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../Features/slice/authSlice";
 import { useFetchUserProfileQuery } from "../../Services/userApiSlice";
 import LoadingSpinner from "../LoadingSpinner";
 
 const SideBar = ({ isSidebarOpen, onClose }) => {
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const getLinkClasses = (isActive) =>
-    `py-2 pl-4 flex gap-2 mx-2 mb-2 items-center rounded-md transition duration-200 ${
-      isActive
-        ? "text-white bg-gradient-to-r from-[#780E0E] to-[#FF5757]"
-        : "text-gray-700 hover:bg-gray-200 hover:text-red-500"
-    }`;
-
   const { data, isLoading } = useFetchUserProfileQuery();
   const role = data?.role;
+
+  const isAdmin = role === "ADMIN";
+  const isSeller = role === "SELLER";
+  const isHost = role === "HOST";
+  const isTravelAgency = role === "TRAVELAGENCY";
+
+  if (isLoading) return <LoadingSpinner fullScreen={true} size="medium" />;
 
   const confirmLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
@@ -28,18 +29,32 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
     }
   };
 
-  if (isLoading) return <LoadingSpinner fullScreen={true} size="medium" />;
+  const getLinkClasses = (isActive) =>
+    `py-2 pl-4 flex gap-2 mx-2 mb-2 items-center rounded-md transition duration-200 ${
+      isActive
+        ? "text-white bg-gradient-to-r from-[#780E0E] to-[#FF5757]"
+        : "text-gray-700 hover:bg-gray-200 hover:text-red-500"
+    }`;
 
-  const isAdmin = role === "ADMIN";
-  const isSeller = role === "SELLER";
-  const isHost = role === "HOST";
-  const isTravelAgency = role === "TRAVELAGENCY";
+  // Track current path and query params
+  const searchParams = new URLSearchParams(location.search);
+
+  // Accommodations
+  const activeAccomodationView = searchParams.get("view"); 
+  const activeStay = searchParams.get("stay");
+  const activeType = searchParams.get("type");
+  const activeRoom = searchParams.get("room");
+
+  const activeTravelPackageView = searchParams.get("view"); 
+  const isAccomodationsActive =
+    location.pathname === "/dashboard/accomodations";
 
   return (
     <div
-      className={`fixed md:relative w-[220px] bg-gray-100 px-4 flex flex-col justify-between h-[650px] shadow-lg transform transition-transform duration-200 ease-in-out ${
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } md:translate-x-0 z-50 overflow-y-auto`}
+      className={`fixed md:relative w-[220px] bg-gray-100 px-4 flex flex-col justify-between 
+      h-screen shadow-lg transform transition-transform duration-200 ease-in-out 
+      ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
+      md:translate-x-0 z-50`}
     >
       {/* Close Button for Mobile */}
       <button
@@ -66,6 +81,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
           >
             <FaClock className="text-lg" /> Overview
           </NavLink>
+
           {isAdmin && (
             <NavLink
               to="/dashboard/site-settings"
@@ -101,143 +117,120 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
               Products
             </NavLink>
           )}
+
+          {/* Accommodations */}
           {(isAdmin || isHost) && (
             <div>
               <NavLink
-                to="/dashboard/accomodations"
-                className={({ isActive }) => getLinkClasses(isActive)}
-                onClick={() =>
-                  navigate("/dashboard/accomodations?view=overview")
+                to="/dashboard/accomodations?view=overview"
+                className={({ isActive }) =>
+                  getLinkClasses(isAccomodationsActive)
                 }
               >
-                Accomodations
+                Accommodations
               </NavLink>
 
-              {/* Submenu */}
               <div className="mx-2 mt-1 flex flex-col space-y-1">
-                {["overview", "stays", "bookings"].map((sub) => {
-                  const isActiveSub =
-                    new URLSearchParams(window.location.search).get("view") ===
-                      sub && window.location.pathname.includes("accomodations");
+                {["overview", "stays", "bookings"].map((sub) => (
+                  <div key={sub}>
+                    <button
+                      onClick={() =>
+                        navigate(`/dashboard/accomodations?view=${sub}`)
+                      }
+                      className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
+                        activeAccomodationView === sub
+                          ? "text-red-500 font-medium"
+                          : "text-gray-600 hover:text-red-500"
+                      }`}
+                    >
+                      {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                    </button>
 
-                  return (
-                    <div key={sub}>
-                      <button
-                        onClick={() =>
-                          navigate(`/dashboard/accomodations?view=${sub}`)
-                        }
-                        className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
-                          isActiveSub
-                            ? "text-red-500 font-medium"
-                            : "text-gray-600 hover:text-red-500"
-                        }`}
-                      >
-                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                      </button>
+                    {/* Stays submenu */}
+                    {sub === "stays" && activeAccomodationView === "stays" && (
+                      <div className="ml-6 mt-1 flex flex-col space-y-1">
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/dashboard/accomodations?view=stays&stay=all`
+                            )
+                          }
+                          className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
+                            activeStay === "all"
+                              ? "text-red-500 font-medium"
+                              : "text-gray-600 hover:text-red-500"
+                          }`}
+                        >
+                          All Stays
+                        </button>
 
-                      {/* 👇 Stays Submenu */}
-                      {sub === "stays" && isActiveSub && (
-                        <div className="ml-6 mt-1 flex flex-col space-y-1">
-                          {["all", "add"].map((staySub) => {
-                            const isActiveStaySub =
-                              new URLSearchParams(window.location.search).get(
-                                "stay"
-                              ) === staySub;
+                        {isAdmin && (
+                          <button
+                            onClick={() =>
+                              navigate(
+                                `/dashboard/accomodations?view=stays&type=true`
+                              )
+                            }
+                            className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
+                              activeType
+                                ? "text-red-500 font-medium"
+                                : "text-gray-600 hover:text-red-500"
+                            }`}
+                          >
+                            Accommodation Type
+                          </button>
+                        )}
 
-                            return (
-                              <div key={staySub}>
-                                <button
-                                  onClick={() =>
-                                    navigate(
-                                      `/dashboard/accomodations?view=stays&stay=${staySub}`
-                                    )
-                                  }
-                                  className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
-                                    isActiveStaySub
-                                      ? "text-red-500 font-medium"
-                                      : "text-gray-600 hover:text-red-500"
-                                  }`}
-                                >
-                                  {staySub === "all" ? "All Stays" : "Add Stay"}
-                                </button>
-
-                                {/* 👇 Rooms Submenu under Add Stay */}
-                                {staySub === "add" && isActiveStaySub && (
-                                  <div className="ml-6 mt-1 flex flex-col space-y-1">
-                                    {/* 👇 Accommodation Type (only for Admin) */}
-                                    {isAdmin && (
-                                      <button
-                                        onClick={() =>
-                                          navigate(
-                                            `/dashboard/accomodations?view=stays&stay=add&type=true`
-                                          )
-                                        }
-                                        className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
-                                          new URLSearchParams(
-                                            window.location.search
-                                          ).get("type")
-                                            ? "text-red-500 font-medium"
-                                            : "text-gray-600 hover:text-red-500"
-                                        }`}
-                                      >
-                                        Accommodation Type
-                                      </button>
-                                    )}
-
-                                    <button
-                                      onClick={() =>
-                                        navigate(
-                                          `/dashboard/accomodations?view=stays&stay=add&room=true`
-                                        )
-                                      }
-                                      className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
-                                        new URLSearchParams(
-                                          window.location.search
-                                        ).get("room")
-                                          ? "text-red-500 font-medium"
-                                          : "text-gray-600 hover:text-red-500"
-                                      }`}
-                                    >
-                                      Rooms
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/dashboard/accomodations?view=stays&room=true`
+                            )
+                          }
+                          className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
+                            activeRoom
+                              ? "text-red-500 font-medium"
+                              : "text-gray-600 hover:text-red-500"
+                          }`}
+                        >
+                          Rooms
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
+          {/* Travel Packages */}
           {(isAdmin || isTravelAgency) && (
             <div>
+              {/* Parent Link */}
               <NavLink
-                to="/dashboard/travelpackages"
-                className={({ isActive }) => getLinkClasses(isActive)}
-                onClick={() =>
-                  navigate("/dashboard/travelpackages?view=overview")
+                to="/dashboard/travelpackages?view=overview"
+                className={() =>
+                  getLinkClasses(
+                    activeTravelPackageView === "overview" ||
+                      activeTravelPackageView === "packages"
+                  )
                 }
               >
                 Travel Packages
               </NavLink>
+
               {/* Submenu */}
               <div className="mx-2 mt-1 flex flex-col space-y-1">
                 {["overview", "packages"].map((sub) => {
-                  const isActiveSub =
-                    new URLSearchParams(window.location.search).get("view") ===
-                    sub;
+                  const isActiveSub = activeTravelPackageView === sub;
+
                   return (
                     <button
                       key={sub}
                       onClick={() =>
                         navigate(`/dashboard/travelpackages?view=${sub}`)
                       }
-                      className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors ${
+                      className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
                         isActiveSub
                           ? "text-red-500 font-medium"
                           : "text-gray-600 hover:text-red-500"

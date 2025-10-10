@@ -13,11 +13,16 @@ const DashboardHome = () => {
   const normalizedRole = role.toLowerCase();
 
   return (
-    <div className="flex h-full">
+    <div className="flex min-h-screen">
+      {/* Sidebar stays fixed full height */}
       <SideBar />
-      <div className="flex-1 px-4">
+
+      {/* Main content scrolls independently */}
+      <div className="flex-1 flex flex-col overflow-y-auto bg-gray-50">
         <Header />
-        <DashboardOverview role={normalizedRole} />
+        <div className="p-4 flex-1 overflow-y-auto">
+          <DashboardOverview role={normalizedRole} />
+        </div>
       </div>
     </div>
   );

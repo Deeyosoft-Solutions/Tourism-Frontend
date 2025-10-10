@@ -19,7 +19,6 @@ const AgencyTravelPackagesDashboard = () => {
   const query = new URLSearchParams(location.search);
   const view = query.get("view") || "overview";
 
-  const [selectedPackage, setSelectedPackage] = useState(null);
   const [notification, setNotification] = useState({
     show: false,
     message: "",
@@ -50,6 +49,11 @@ const AgencyTravelPackagesDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const packages = response?.data || [];
+
+  // Get selected package from URL
+  const packageId = query.get("packageId");
+  const selectedPackage = packages.find((p) => p.id === packageId) || null;
+
   const filteredPackages = packages.filter((pkg) =>
     pkg.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -104,7 +108,7 @@ const AgencyTravelPackagesDashboard = () => {
           message: "Package deleted successfully!",
           type: "success",
         });
-        setSelectedPackage(null);
+        navigate("/dashboard/travelpackages?view=packages");
         refetch();
       } catch (err) {
         setNotification({
@@ -160,16 +164,12 @@ const AgencyTravelPackagesDashboard = () => {
           {notification.type === "success" ? (
             <SuccessToast
               message={notification.message}
-              onClose={() =>
-                setNotification({ ...notification, show: false })
-              }
+              onClose={() => setNotification({ ...notification, show: false })}
             />
           ) : (
             <ErrorToast
               message={notification.message}
-              onClose={() =>
-                setNotification({ ...notification, show: false })
-              }
+              onClose={() => setNotification({ ...notification, show: false })}
             />
           )}
         </div>
@@ -179,7 +179,9 @@ const AgencyTravelPackagesDashboard = () => {
         {selectedPackage ? (
           <>
             <button
-              onClick={() => setSelectedPackage(null)}
+              onClick={() =>
+                navigate("/dashboard/travelpackages?view=packages")
+              }
               className="mb-6 text-blue-600 hover:underline"
             >
               ← Back to Packages
@@ -187,7 +189,11 @@ const AgencyTravelPackagesDashboard = () => {
 
             <PackageDetailsComponent
               selectedPackage={selectedPackage}
-              handleEdit={(pkg) => setSelectedPackage(pkg)}
+              handleEdit={(pkg) =>
+                navigate(
+                  `/dashboard/travelpackages?view=packages&packageId=${pkg.id}`
+                )
+              }
               handleToggleDepartures={handleToggleDepartures}
               handleDelete={handleDelete}
             />
@@ -204,7 +210,11 @@ const AgencyTravelPackagesDashboard = () => {
             filteredPackages={filteredPackages}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            handleRowClick={(pkg) => setSelectedPackage(pkg)}
+            handleRowClick={(pkg) =>
+              navigate(
+                `/dashboard/travelpackages?view=packages&packageId=${pkg.id}`
+              )
+            }
             handleToggleDepartures={handleToggleDepartures}
             handleDelete={handleDelete}
             handleUpdatePackage={handleUpdatePackage}

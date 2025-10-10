@@ -1,4 +1,5 @@
 import { Package, Calendar, Users, Clock } from "lucide-react";
+import { FaEye } from "react-icons/fa";
 
 const OverviewComponent = ({ packages, navigateTo }) => {
   const totalPackages = packages.length;
@@ -22,7 +23,7 @@ const OverviewComponent = ({ packages, navigateTo }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-red-600">
+          <h1 className="text-2xl font-semibold">
             Travel Packages Overview
           </h1>
           <p className="text-gray-600">
@@ -32,9 +33,9 @@ const OverviewComponent = ({ packages, navigateTo }) => {
         <div className="flex space-x-3">
           <button
             onClick={() => navigateTo("packages")}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow transition"
           >
-            View All Packages
+            <FaEye /> View All Packages
           </button>
         </div>
       </div>

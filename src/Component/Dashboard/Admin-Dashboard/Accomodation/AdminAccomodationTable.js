@@ -1,8 +1,132 @@
+import { useState } from "react";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { useGetAccommodationsQuery } from "../../../../Services/accomodationApiSlice";
+import ForAdminAddStay from "./Homestays/AdminAddStays";
+import AccommodationDetailsView from "./AccomodationDetailsView";
+
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const AdminAccomodationTable = () => {
-  return (
-    <div>AdminAccomodationTable</div>
-  )
-}
+  const { data, isLoading, isError, error, refetch } = useGetAccommodationsQuery();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedAccommodation, setSelectedAccommodation] = useState(null);
 
-export default AdminAccomodationTable
+  const accommodations = data?.data || [];
+
+  const handleEdit = (accommodation) => {
+    console.log("Editing:", accommodation);
+    // open edit modal or navigate to edit form here
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure you want to delete this accommodation?")) {
+      console.log("Deleting accommodation ID:", id);
+      // call delete API or mutation here
+    }
+  };
+
+  if (isLoading)
+    return <div className="p-6 text-center text-gray-600">Loading accommodations...</div>;
+
+  if (isError)
+    return (
+      <div className="p-6 text-center text-red-500">
+        Error fetching accommodations: {error?.message || "Something went wrong"}
+      </div>
+    );
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {selectedAccommodation ? (
+        <AccommodationDetailsView
+          accommodation={selectedAccommodation}
+          onClose={() => setSelectedAccommodation(null)}
+        />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-semibold text-gray-800">All Accommodations</h1>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow"
+            >
+              <FaPlus /> Add Accommodation
+            </button>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto bg-white shadow-md rounded-lg border border-gray-200">
+            <table className="min-w-full text-left text-sm text-gray-700">
+              <thead className="bg-gray-100 text-gray-900 uppercase text-xs font-semibold">
+                <tr>
+                  <th className="px-6 py-3">Image</th>
+                  <th className="px-6 py-3">Name</th>
+                  <th className="px-6 py-3">Address</th>
+                  <th className="px-6 py-3">Price/Night</th>
+                  <th className="px-6 py-3">Max Guests</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accommodations.map((acc) => (
+                  <tr key={acc.id} className="border-b hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <img
+                        src={acc.images?.[0] ? `${API_BASE_URL}${acc.images[0]}` : "/placeholder.png"}
+                        alt={acc.name}
+                        className="w-16 h-16 object-cover rounded-md border"
+                      />
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-800">{acc.name}</td>
+                    <td className="px-6 py-4">{acc.address}</td>
+                    <td className="px-6 py-4">Rs. {acc.pricePerNight}</td>
+                    <td className="px-6 py-4">{acc.maxGuests}</td>
+                    <td
+                      className={`px-6 py-4 font-medium ${
+                        acc.status === "active" ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {acc.status}
+                    </td>
+                    <td className="px-6 py-4 text-center space-x-3">
+                      <button
+                        onClick={() => setSelectedAccommodation(acc)}
+                        className="text-blue-600 hover:text-blue-800 transition"
+                        title="View Details"
+                      >
+                        <FaEye className="inline-block w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(acc)}
+                        className="text-green-500 hover:text-green-700 transition"
+                        title="Edit"
+                      >
+                        <FaEdit className="inline-block w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(acc.id)}
+                        className="text-red-600 hover:text-red-800 transition"
+                        title="Delete"
+                      >
+                        <FaTrash className="inline-block w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Add Accommodation Modal */}
+          {isAddModalOpen && (
+            <ForAdminAddStay onClose={() => setIsAddModalOpen(false)} onAdded={refetch} />
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default AdminAccomodationTable;
