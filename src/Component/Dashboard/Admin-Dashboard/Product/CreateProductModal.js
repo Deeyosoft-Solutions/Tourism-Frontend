@@ -8,7 +8,8 @@ import { useGetCategoriesQuery } from "../../../../Services/categoryApiSlice";
 const CreateProductModal = ({ isOpen, onClose, onCreate }) => {
   const [step, setStep] = useState(1);
   const editorRef = useRef(null);
-  const { data: categories, isLoading, isError } = useGetCategoriesQuery();
+  const { data, isLoading, isError } = useGetCategoriesQuery();
+  const categories = Array.isArray(data?.data) ? data.data : [];
 
   const formik = useFormik({
     initialValues: {
@@ -292,19 +293,20 @@ const CreateProductModal = ({ isOpen, onClose, onCreate }) => {
                     name="category"
                     {...formik.getFieldProps("category")}
                     className="w-full p-2 border border-gray-300 rounded-lg"
+                    disabled={isLoading || isError}
                   >
                     <option value="">Select Category</option>
-                    {isLoading ? (
+                    {isLoading && (
                       <option value="">Loading categories...</option>
-                    ) : isError ? (
-                      <option value="">Error loading categories</option>
-                    ) : (
-                      categories?.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))
                     )}
+                    {isError && (
+                      <option value="">Error loading categories</option>
+                    )}
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
                   {formik.touched.category && formik.errors.category && (
                     <div className="text-red-500 text-sm mt-1">

@@ -4,18 +4,24 @@ import { useFetchUserProfileQuery } from "../../../Services/userApiSlice";
 import LoadingSpinner from "../../../Component/LoadingSpinner";
 import TravelPackagesDashboard from "../../../Component/Dashboard/Admin-Dashboard/Travel Package/AllTravelPackages";
 import AgencyTravelPackagesDashboard from "../../../Component/Dashboard/Travel-Dashboard/AllUserTravelPackages";
+import { useState } from "react";
 
 const TravelPackages = () => {
   const { data, isLoading } = useFetchUserProfileQuery();
   const role = data?.role;
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   if (isLoading) return <LoadingSpinner fullScreen />;
 
   return (
     <div className="flex h-full">
-      <SideBar />
+      <SideBar
+        isSidebarOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
       <div className="flex-1 px-4">
-        <Header />
+        <Header onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
         {role === "ADMIN" && <TravelPackagesDashboard />}
         {role === "TRAVELAGENCY" && <AgencyTravelPackagesDashboard />}
         {!["ADMIN", "TRAVELAGENCY"].includes(role) && (

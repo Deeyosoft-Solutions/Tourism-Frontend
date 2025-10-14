@@ -39,7 +39,7 @@ const CreateCategoryModal = ({ isOpen, onClose, onCreate }) => {
     >
       <div className="bg-white p-6 rounded-lg w-1/2 relative shadow-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-Open items-center">Add Category</h2>
+          <h2 className="text-lg text-red-500 font-Open font-semibold items-center">Add Category</h2>
           <button
             onClick={handleClose}
             className="hover:text-gray-500"
@@ -50,19 +50,6 @@ const CreateCategoryModal = ({ isOpen, onClose, onCreate }) => {
         </div>
         <form onSubmit={formik.handleSubmit}>
           <div className="mb-4 justify-center">
-            <div className="flex items-center">
-              <div
-                className={`rounded-full w-6 h-6 flex items-center justify-center bg-red-600 text-white`}
-              >
-                1
-              </div>
-              <span
-                className="mx-4 text-red-600 text-lg"
-              >
-                Basic Information
-              </span>
-            </div>
-          
             <div className="mb-2">
               <label
                 htmlFor="name"

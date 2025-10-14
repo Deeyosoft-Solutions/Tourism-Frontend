@@ -273,7 +273,7 @@ const MyProducts = () => {
                         <img
                           src={
                             product.images?.[0]
-                              ? `${API_BASE_URL}/${product.images[0]}`
+                              ? `${API_BASE_URL}${product.images[0]}`
                               : "/public/assets/Images/product-default.png"
                           }
                           alt={product.name || "Product image"}

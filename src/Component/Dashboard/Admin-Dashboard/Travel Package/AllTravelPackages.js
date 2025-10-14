@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   useGetTravelPackagesQuery,
@@ -6,17 +6,18 @@ import {
   useDeleteTravelPackageMutation,
 } from "../../../../Services/travelPackageApiSlice";
 import LoadingSpinner from "../../../LoadingSpinner";
-import ErrorToast from "../../../ErrorToast";
-import SuccessToast from "../../../SuccessToast";
 import PackagesListComponent from "./Comp/PackagesListComponent";
 import PackageDetailsComponent from "./Comp/Details/PackageDetailsComponent";
 import OverviewComponent from "./Comp/OverviewComponent";
+import { FaArrowLeft } from "react-icons/fa";
+import ErrorToast from "../../../ErrorToast";
+import SuccessToast from "../../../SuccessToast";
 
 const TravelPackagesDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  const view = query.get("view") || "overview";
+  const view = query.get("view") || "traveloverview";
 
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [notification, setNotification] = useState({
@@ -25,8 +26,14 @@ const TravelPackagesDashboard = () => {
     type: "",
   });
 
-  const { data: response, isLoading, isError, error, refetch } =
-    useGetTravelPackagesQuery();
+  const {
+    data: response,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetTravelPackagesQuery();
+
   const [updateTravelPackage] = useUpdateTravelPackageMutation();
   const [deleteTravelPackage] = useDeleteTravelPackageMutation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,15 +42,6 @@ const TravelPackagesDashboard = () => {
   const filteredPackages = packages.filter((pkg) =>
     pkg.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  useEffect(() => {
-    return () => {
-      // clean up blob URLs
-      document.querySelectorAll("img[src^='blob:']").forEach((img) => {
-        URL.revokeObjectURL(img.src);
-      });
-    };
-  }, []);
 
   // Toggle departures
   const handleToggleDepartures = async (pkg, e) => {
@@ -101,25 +99,6 @@ const TravelPackagesDashboard = () => {
     }
   };
 
-  // Update package
-  const handleUpdatePackage = async (id, updates) => {
-    try {
-      await updateTravelPackage({ id, updates }).unwrap();
-      setNotification({
-        show: true,
-        message: "Package updated successfully!",
-        type: "success",
-      });
-      refetch();
-    } catch (err) {
-      setNotification({
-        show: true,
-        message: err.message || "Failed to update package",
-        type: "error",
-      });
-    }
-  };
-
   if (isLoading) return <LoadingSpinner fullScreen />;
   if (isError)
     return (
@@ -137,16 +116,12 @@ const TravelPackagesDashboard = () => {
           {notification.type === "success" ? (
             <SuccessToast
               message={notification.message}
-              onClose={() =>
-                setNotification({ ...notification, show: false })
-              }
+              onClose={() => setNotification({ ...notification, show: false })}
             />
           ) : (
             <ErrorToast
               message={notification.message}
-              onClose={() =>
-                setNotification({ ...notification, show: false })
-              }
+              onClose={() => setNotification({ ...notification, show: false })}
             />
           )}
         </div>
@@ -157,9 +132,9 @@ const TravelPackagesDashboard = () => {
           <>
             <button
               onClick={() => setSelectedPackage(null)}
-              className="mb-6 text-blue-600 hover:underline"
+              className="flex items-center gap-2 border border-gray-300 rounded-md mb-2 px-3 py-1.5 text-sm font-medium hover:bg-gray-100 transition"
             >
-              ← Back to Packages
+              <FaArrowLeft size={14} /> Go Back
             </button>
 
             <PackageDetailsComponent
@@ -169,7 +144,7 @@ const TravelPackagesDashboard = () => {
               handleDelete={handleDelete}
             />
           </>
-        ) : view === "overview" ? (
+        ) : view === "traveloverview" ? (
           <OverviewComponent
             packages={packages}
             navigateTo={(page) =>
@@ -184,10 +159,7 @@ const TravelPackagesDashboard = () => {
             handleRowClick={(pkg) => setSelectedPackage(pkg)}
             handleToggleDepartures={handleToggleDepartures}
             handleDelete={handleDelete}
-            handleUpdatePackage={handleUpdatePackage}
-            handleCreatePackage={(formData) =>
-              console.log("Create package:", formData)
-            }
+            refetch={refetch} 
           />
         )}
       </div>

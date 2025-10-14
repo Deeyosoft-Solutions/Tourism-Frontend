@@ -18,10 +18,12 @@ const UpdateProductModal = ({ isOpen, onClose, slug }) => {
   const [maxImagesReached, setMaxImagesReached] = useState(false);
 
   const {
-    data: categories,
+    data,
     isLoading: isCategoriesLoading,
     isError: isCategoriesError,
   } = useGetCategoriesQuery();
+
+  const categories = Array.isArray(data?.data) ? data.data : [];
 
   // Fetch product data by slug
   const {
@@ -245,7 +247,7 @@ const UpdateProductModal = ({ isOpen, onClose, slug }) => {
                       <img
                         src={
                           typeof image === "string"
-                            ? `${API_BASE_URL}/${image.url || image}`
+                            ? `${API_BASE_URL}${image.url || image}`
                             : URL.createObjectURL(image)
                         }
                         alt="Product"
@@ -341,17 +343,17 @@ const UpdateProductModal = ({ isOpen, onClose, slug }) => {
                     disabled={isCategoriesLoading || isCategoriesError}
                   >
                     <option value="">Select Category</option>
-                    {isCategoriesLoading ? (
+                    {isCategoriesLoading && (
                       <option value="">Loading categories...</option>
-                    ) : isCategoriesError ? (
-                      <option value="">Error loading categories</option>
-                    ) : (
-                      categories?.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))
                     )}
+                    {isCategoriesError && (
+                      <option value="">Error loading categories</option>
+                    )}
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>

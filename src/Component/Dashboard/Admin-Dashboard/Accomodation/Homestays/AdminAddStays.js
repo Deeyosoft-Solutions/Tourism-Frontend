@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaTimes, FaCheck, FaArrowRight } from "react-icons/fa";
 import { useAddAccommodationMutation } from "../../../../../Services/accomodationApiSlice";
-import { useGetAccomodationCategoriesQuery } from "../../../../../Services/accomodationCategory.ApiSlice";
+import { useGetAccomodationCategoriesQuery } from "../../../../../Services/accomodationCategoryApiSlice";
 
 
 const ForAdminAddStay = ({ onClose, onAdded }) => {

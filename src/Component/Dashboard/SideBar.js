@@ -40,12 +40,12 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
   const searchParams = new URLSearchParams(location.search);
 
   // Accommodations
-  const activeAccomodationView = searchParams.get("view"); 
+  const activeAccomodationView = searchParams.get("view");
   const activeStay = searchParams.get("stay");
   const activeType = searchParams.get("type");
   const activeRoom = searchParams.get("room");
 
-  const activeTravelPackageView = searchParams.get("view"); 
+  const activeTravelPackageView = searchParams.get("view");
   const isAccomodationsActive =
     location.pathname === "/dashboard/accomodations";
 
@@ -130,12 +130,16 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                 Accommodations
               </NavLink>
 
-              <div className="mx-2 mt-1 flex flex-col space-y-1">
+              <div className="mx-2 my-3 flex flex-col space-y-1">
                 {["overview", "stays", "bookings"].map((sub) => (
                   <div key={sub}>
                     <button
                       onClick={() =>
-                        navigate(`/dashboard/accomodations?view=${sub}`)
+                        navigate(
+                          sub === "stays"
+                            ? `/dashboard/accomodations?view=stays&stay=all`
+                            : `/dashboard/accomodations?view=${sub}`
+                        )
                       }
                       className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
                         activeAccomodationView === sub
@@ -206,13 +210,11 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
           {/* Travel Packages */}
           {(isAdmin || isTravelAgency) && (
             <div>
-              {/* Parent Link */}
               <NavLink
-                to="/dashboard/travelpackages?view=overview"
-                className={() =>
+                to="/dashboard/travelpackages?view=traveloverview"
+                className={({ isActive }) =>
                   getLinkClasses(
-                    activeTravelPackageView === "overview" ||
-                      activeTravelPackageView === "packages"
+                    isActive || activeTravelPackageView === "traveloverview"
                   )
                 }
               >
@@ -220,8 +222,8 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
               </NavLink>
 
               {/* Submenu */}
-              <div className="mx-2 mt-1 flex flex-col space-y-1">
-                {["overview", "packages"].map((sub) => {
+              <div className="mx-2 my-3 flex flex-col space-y-1">
+                {["traveloverview", "packages"].map((sub) => {
                   const isActiveSub = activeTravelPackageView === sub;
 
                   return (

@@ -13,7 +13,7 @@ import { feedbackApi } from './../Services/feedbackApiSlice';
 import { destinationApi } from "../Services/destinationApiSlice";
 import { travelPackageApi } from "../Services/travelPackageApiSlice";
 import { departuresApi } from "../Services/departuresApiSlice";
-import { accommodationCategoryApi } from "../Services/accomodationCategory.ApiSlice";
+import { accommodationCategoryApi } from "../Services/accomodationCategoryApiSlice";
 import { accommodationApi } from "../Services/accomodationApiSlice";
 
 
@@ -33,7 +33,7 @@ export const store = configureStore({
     [accommodationCategoryApi.reducerPath]: accommodationCategoryApi.reducer,
     [accommodationApi.reducerPath]: accommodationApi.reducer,
     [travelPackageApi.reducerPath]: travelPackageApi.reducer,
-    [departuresApi.reducerPath]: departuresApi.reducer, // add API reducer
+    [departuresApi.reducerPath]: departuresApi.reducer, 
     auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>

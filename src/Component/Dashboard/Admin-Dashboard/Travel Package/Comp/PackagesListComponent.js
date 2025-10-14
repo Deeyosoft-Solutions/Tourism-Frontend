@@ -1,10 +1,12 @@
 import { BiFilterAlt, BiSearch } from "react-icons/bi";
-import { FaPencilAlt, FaTrashAlt } from "react-icons/fa";
+import { FaTrashAlt, FaEdit } from "react-icons/fa";
 import { Eye } from "lucide-react";
-import CreatedByCell from "./CreatedByCell";
 import { useState } from "react";
-import CreateTravelPackageModal from "../CreatePackagesModal";
-import UpdateTravelPackageModal from "../UpdatePackagesModal";
+import { useDeleteTravelPackageMutation } from "../../../../../Services/travelPackageApiSlice";
+import CreatePackageModal from "../CreatePackagesModal";
+import UpdatePackageModal from "../UpdatePackagesModal";
+import SuccessToast from "../../../../SuccessToast";
+import ErrorToast from "../../../../ErrorToast";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -14,21 +16,66 @@ const PackagesListComponent = ({
   setSearchTerm,
   handleRowClick,
   handleToggleDepartures,
-  handleDelete,
-  handleCreatePackage,
-  handleUpdatePackage,
+  refetch,
 }) => {
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "",
+  });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
 
-  const openUpdateModal = (pkg) => {
-    setSelectedPackage(pkg);
-    setIsUpdateModalOpen(true);
+  const [deleteTravelPackage] = useDeleteTravelPackageMutation();
+
+  // Delete package
+  const handleDelete = async (pkg, e) => {
+    e?.stopPropagation();
+    if (!pkg?.slug)
+      return setNotification({
+        show: true,
+        message: "Package slug not found",
+        type: "error",
+      });
+
+    if (window.confirm("Are you sure you want to delete this package?")) {
+      try {
+        await deleteTravelPackage(pkg.slug).unwrap();
+        setNotification({
+          show: true,
+          message: "Package deleted successfully!",
+          type: "success",
+        });
+      } catch (err) {
+        setNotification({
+          show: true,
+          message: err.message || "Failed to delete package",
+          type: "error",
+        });
+      }
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Notification */}
+      {notification.show && (
+        <div className="fixed top-4 right-4 z-50">
+          {notification.type === "success" ? (
+            <SuccessToast
+              message={notification.message}
+              onClose={() => setNotification({ ...notification, show: false })}
+            />
+          ) : (
+            <ErrorToast
+              message={notification.message}
+              onClose={() => setNotification({ ...notification, show: false })}
+            />
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">
@@ -57,10 +104,10 @@ const PackagesListComponent = ({
             <BiFilterAlt size={18} className="mr-2" />
             <span className="text-sm font-medium">Filter</span>
           </button>
-
           <button
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 w-full md:w-auto disabled:opacity-50"
+            aria-label="Add new Category"
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
           >
             + Add Package
           </button>
@@ -79,7 +126,6 @@ const PackagesListComponent = ({
                   "Price",
                   "Destination",
                   "Departures",
-                  "Created By",
                   "Lead Time",
                   "Actions",
                 ].map((header) => (
@@ -92,7 +138,6 @@ const PackagesListComponent = ({
                 ))}
               </tr>
             </thead>
-
             <tbody className="divide-y divide-gray-200">
               {filteredPackages?.length > 0 ? (
                 filteredPackages.map((pkg) => (
@@ -138,14 +183,12 @@ const PackagesListComponent = ({
                         />
                       </button>
                     </td>
-                    <td className="px-4 py-3">
-                      <CreatedByCell userId={pkg.createdById} />
-                    </td>
                     <td className="px-4 py-3 text-center">
                       {Number(pkg.bookingLeadHours)}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex space-x-3">
+                      <div className="flex space-x-2">
+                        {/* View button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -156,13 +199,19 @@ const PackagesListComponent = ({
                         >
                           <Eye size={18} />
                         </button>
+                        {/* Edit button */}
                         <button
-                          onClick={() => openUpdateModal(pkg)}
-                          className="p-2 text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 rounded-md transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPackage(pkg);
+                            setIsUpdateModalOpen(true);
+                          }}
+                          className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-md transition"
                           title="Edit Package"
                         >
-                          <FaPencilAlt size={16} />
+                          <FaEdit size={16} />
                         </button>
+                        {/* Delete button */}
                         <button
                           onClick={(e) => handleDelete(pkg, e)}
                           className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition"
@@ -177,7 +226,7 @@ const PackagesListComponent = ({
               ) : (
                 <tr>
                   <td
-                    colSpan="8"
+                    colSpan="7"
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {searchTerm
@@ -192,25 +241,43 @@ const PackagesListComponent = ({
       </div>
 
       {/* Create Modal */}
-      <CreateTravelPackageModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onCreate={(formData) => {
-          handleCreatePackage(formData);
-          setIsCreateModalOpen(false);
-        }}
-      />
+      {isCreateModalOpen && (
+        <CreatePackageModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={() => {
+            setIsCreateModalOpen(false); // Close modal
+            refetch(); // Refresh table
+            setNotification({
+              show: true,
+              message: "Package created successfully!",
+              type: "success",
+            });
+          }}
+        />
+      )}
 
       {/* Update Modal */}
-      <UpdateTravelPackageModal
-        isOpen={!!selectedPackage && isUpdateModalOpen}
-        onClose={() => setIsUpdateModalOpen(false)}
-        initialValues={selectedPackage}
-        onUpdate={(formData) => {
-          handleUpdatePackage(selectedPackage.id, formData);
-          setIsUpdateModalOpen(false);
-        }}
-      />
+      {isUpdateModalOpen && selectedPackage && (
+        <UpdatePackageModal
+          packageData={selectedPackage}
+          isOpen={isUpdateModalOpen}
+          onClose={() => {
+            setIsUpdateModalOpen(false);
+            setSelectedPackage(null);
+          }}
+          onSuccess={() => {
+            setIsUpdateModalOpen(false);
+            setSelectedPackage(null);
+            refetch(); // Refresh table
+            setNotification({
+              show: true,
+              message: "Package updated successfully!",
+              type: "success",
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

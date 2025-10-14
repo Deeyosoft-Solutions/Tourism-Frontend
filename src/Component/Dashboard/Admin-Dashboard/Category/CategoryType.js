@@ -15,12 +15,14 @@ import ErrorMessage from "../../../ErrorMessage";
 
 const CategoryType = () => {
   const {
-    data: categories,
+    data: categoriesResponse,
     isLoading,
     isError,
     error,
     refetch,
   } = useGetCategoriesQuery();
+  const categories = categoriesResponse?.data || [];
+
   const [createCategory, { isLoading: isCreating }] =
     useCreateCategoryMutation();
   const [deleteCategory, { isLoading: isDeleting }] =
@@ -35,34 +37,30 @@ const CategoryType = () => {
     type: "",
   });
 
-  const filteredCategories = (
-    Array.isArray(categories) ? categories : []
-  ).filter((category) => {
-    const categoryName = category?.name || "";
-    const searchText = searchTerm || "";
-    return categoryName.toLowerCase().startsWith(searchText.toLowerCase());
-  });
+  const filteredCategories = categories.filter((category) =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleCreateCategory = async (newCategory) => {
     try {
       await createCategory(newCategory).unwrap();
       setNotification({
         show: true,
-        message: "Product created successfully!",
+        message: "Category created successfully!",
         type: "success",
       });
       refetch();
     } catch (error) {
       setNotification({
         show: true,
-        message: error.message || "Failed to create product",
+        message: error.message || "Failed to create category",
         type: "error",
       });
     }
   };
 
   const handleUpdate = (slug) => {
-    setSelectedCategoryId(slug); // Rename this state to selectedCategorySlug would be clearer
+    setSelectedCategoryId(slug);
     setIsUpdateModalOpen(true);
   };
 
@@ -75,7 +73,7 @@ const CategoryType = () => {
         await deleteCategory(id).unwrap();
         setNotification({
           show: true,
-          message: "Product deleted successfully!",
+          message: "Category deleted successfully!",
           type: "success",
         });
         refetch();
@@ -83,7 +81,7 @@ const CategoryType = () => {
         console.error("Failed to delete category:", error);
         setNotification({
           show: true,
-          message: error.message || "Failed to delete product",
+          message: error.message || "Failed to delete category",
           type: "error",
         });
       }
@@ -186,16 +184,23 @@ const CategoryType = () => {
                     </td>
                     <td className="px-4 md:px-6 py-3">
                       <div className="flex space-x-2 justify-center">
-                        <div
-                          className="text-green-500 hover:text-green-600 cursor-pointer"
+                        <button
+                          type="button"
+                          className="text-green-500 hover:text-green-600"
                           onClick={() => handleUpdate(category.slug)}
                           title="Edit"
                         >
                           <FaPencilAlt className="w-4 h-4" />
-                        </div>
-                        <div
-                          className="text-red-500 hover:text-red-600 cursor-pointer"
-                          onClick={() => handleDelete(category.id)}
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`text-red-500 hover:text-red-600 flex items-center justify-center ${
+                            isDeleting ? "cursor-not-allowed opacity-50" : ""
+                          }`}
+                          onClick={() =>
+                            !isDeleting && handleDelete(category.id)
+                          }
                           aria-label={`Delete ${category.name}`}
                           disabled={isDeleting}
                         >
@@ -204,7 +209,7 @@ const CategoryType = () => {
                           ) : (
                             <FaTrashAlt className="w-4 h-4" />
                           )}
-                        </div>
+                        </button>
                       </div>
                     </td>
                   </tr>
