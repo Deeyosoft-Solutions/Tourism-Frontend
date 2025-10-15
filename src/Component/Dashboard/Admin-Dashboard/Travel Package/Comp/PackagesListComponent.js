@@ -78,7 +78,7 @@ const PackagesListComponent = ({
 
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-red-500">
           All Travel Packages
         </h2>
       </div>

@@ -23,7 +23,7 @@ const OverviewComponent = ({ packages, navigateTo }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-2xl text-red-500 font-semibold">
             Travel Packages Overview
           </h1>
           <p className="text-gray-600">

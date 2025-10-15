@@ -10,10 +10,10 @@ export const accommodationApi = createApi({
       query: () => '/accommodations',
     }),
     addAccommodation: builder.mutation({
-      query: (body) => ({
+      query: (formData) => ({
         url: '/accommodations',
         method: 'POST',
-        body,
+        body: formData,
       }),
     }),
     deleteAccommodation: builder.mutation({

@@ -43,7 +43,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
   const activeAccomodationView = searchParams.get("view");
   const activeStay = searchParams.get("stay");
   const activeType = searchParams.get("type");
-  const activeRoom = searchParams.get("room");
+  // const activeRoom = searchParams.get("room");
 
   const activeTravelPackageView = searchParams.get("view");
   const isAccomodationsActive =
@@ -184,7 +184,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                             Accommodation Type
                           </button>
                         )}
-
+                       {/* 
                         <button
                           onClick={() =>
                             navigate(
@@ -198,7 +198,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                           }`}
                         >
                           Rooms
-                        </button>
+                        </button> */}
                       </div>
                     )}
                   </div>
@@ -223,7 +223,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
 
               {/* Submenu */}
               <div className="mx-2 my-3 flex flex-col space-y-1">
-                {["traveloverview", "packages"].map((sub) => {
+                {["travel overview", "packages", "travel bookings"].map((sub) => {
                   const isActiveSub = activeTravelPackageView === sub;
 
                   return (

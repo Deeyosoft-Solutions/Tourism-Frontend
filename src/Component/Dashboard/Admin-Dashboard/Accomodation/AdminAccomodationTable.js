@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { useGetAccommodationsQuery } from "../../../../Services/accomodationApiSlice";
-import ForAdminAddStay from "./Homestays/AdminAddStays";
+import ForAdminAddStay from "./AdminAddStays";
 import AccommodationDetailsView from "./AccomodationDetailsView";
 import LoadingSpinner from "./../../../LoadingSpinner";
 import ErrorMessage from "../../../ErrorMessage";
@@ -9,8 +9,7 @@ import ErrorMessage from "../../../ErrorMessage";
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const AdminAccomodationTable = () => {
-  const { data, isLoading, isError, error, refetch } =
-    useGetAccommodationsQuery();
+  const { data, isLoading, isError, error, refetch } = useGetAccommodationsQuery();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
 
@@ -44,7 +43,7 @@ const AdminAccomodationTable = () => {
         <>
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-800">
+            <h1 className="text-2xl font-semibold text-red-500">
               All Accommodations
             </h1>
             <button

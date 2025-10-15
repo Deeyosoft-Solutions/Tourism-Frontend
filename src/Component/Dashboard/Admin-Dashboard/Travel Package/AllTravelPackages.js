@@ -12,12 +12,13 @@ import OverviewComponent from "./Comp/OverviewComponent";
 import { FaArrowLeft } from "react-icons/fa";
 import ErrorToast from "../../../ErrorToast";
 import SuccessToast from "../../../SuccessToast";
+import AllBookings from "./Comp/Travel Bookings/AllBookings";
 
 const TravelPackagesDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  const view = query.get("view") || "traveloverview";
+  const view = query.get("view") || "travel overview";
 
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [notification, setNotification] = useState({
@@ -144,13 +145,15 @@ const TravelPackagesDashboard = () => {
               handleDelete={handleDelete}
             />
           </>
-        ) : view === "traveloverview" ? (
+        ) : view === "travel overview" ? (
           <OverviewComponent
             packages={packages}
             navigateTo={(page) =>
               navigate(`/dashboard/travelpackages?view=${page}`)
             }
           />
+        ) : view === "travel bookings" ? (
+          <AllBookings />
         ) : (
           <PackagesListComponent
             filteredPackages={filteredPackages}
@@ -159,7 +162,7 @@ const TravelPackagesDashboard = () => {
             handleRowClick={(pkg) => setSelectedPackage(pkg)}
             handleToggleDepartures={handleToggleDepartures}
             handleDelete={handleDelete}
-            refetch={refetch} 
+            refetch={refetch}
           />
         )}
       </div>

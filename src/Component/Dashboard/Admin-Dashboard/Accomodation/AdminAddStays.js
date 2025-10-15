@@ -1,37 +1,39 @@
 import { useState } from "react";
 import { FaTimes, FaCheck, FaArrowRight } from "react-icons/fa";
-import { useAddAccommodationMutation } from "../../../../../Services/accomodationApiSlice";
-import { useGetAccomodationCategoriesQuery } from "../../../../../Services/accomodationCategoryApiSlice";
-
+import { useGetAccomodationCategoriesQuery } from "../../../../Services/accomodationCategoryApiSlice";
+import { useAddAccommodationMutation } from "../../../../Services/accomodationApiSlice";
 
 const ForAdminAddStay = ({ onClose, onAdded }) => {
   const [addAccommodation, { isLoading }] = useAddAccommodationMutation();
-  const { data: categories, isLoading: categoriesLoading } = useGetAccomodationCategoriesQuery();
+  const { data: categoriesData } = useGetAccomodationCategoriesQuery();
   const [currentStep, setCurrentStep] = useState(1);
+  const [images, setImages] = useState([]);
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     address: "",
     categoryId: "",
-    checkInFrom: "02:00 PM",
-    checkOutUntil: "11:00 AM",
+    checkInFrom: "10:00 AM",
+    checkOutUntil: "12:00 PM",
     primaryDestinationId: "",
     lat: "",
     lng: "",
-    pricePerNight: "",
     cleaningFee: "",
     serviceFeePct: "",
     taxPct: "",
     minNights: "",
     maxNights: "",
-    maxGuests: "",
+    houseRules: "",
+    contactNote: "",
     amenities: [],
+    destinations: [],
     images: [],
     published: false,
   });
 
   const [error, setError] = useState("");
+  const categories = categoriesData?.data || [];
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -41,19 +43,40 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
     });
   };
 
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const imageUrls = files.map((file) => URL.createObjectURL(file));
+    setImages(imageUrls);
+
+    // also store the actual File objects
+    setFormData({
+      ...formData,
+      images: files,
+    });
+  };
+
   const handleNext = () => {
     if (currentStep === 1) {
-      if (!formData.name || !formData.description || !formData.address || !formData.primaryDestinationId) {
+      if (
+        !formData.name ||
+        !formData.description ||
+        !formData.address ||
+        !formData.primaryDestinationId
+      ) {
         setError("Please fill all required fields.");
         return;
       }
     } else if (currentStep === 2) {
-      if (!formData.pricePerNight || !formData.minNights || !formData.maxNights || !formData.maxGuests) {
+      if (!formData.minNights || !formData.maxNights) {
+        setError("Please fill all required fields.");
+        return;
+      }
+    } else if (currentStep === 3) {
+      if (!formData.images) {
         setError("Please fill all required fields.");
         return;
       }
     }
-    
     setError("");
     setCurrentStep(currentStep + 1);
   };
@@ -64,13 +87,43 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.description || !formData.address || !formData.pricePerNight) {
+    if (
+      !formData.name ||
+      !formData.description ||
+      !formData.address ||
+      !formData.primaryDestinationId ||
+      !formData.minNights ||
+      !formData.maxNights
+    ) {
       setError("Please fill all required fields.");
       return;
     }
 
+    if (
+      !formData.images ||
+      formData.images.length < 1 ||
+      formData.images.length > 10
+    ) {
+      setError("Please upload between 1 and 10 images.");
+      return;
+    }
+
     try {
-      await addAccommodation(formData).unwrap();
+      const formDataToSend = new FormData();
+      for (const key in formData) {
+        if (key === "images") {
+          formData.images.forEach((file) => {
+            formDataToSend.append("images", file);
+          });
+        } else if (Array.isArray(formData[key])) {
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else {
+          formDataToSend.append(key, formData[key]);
+        }
+      }
+
+      await addAccommodation(formDataToSend).unwrap();
+      console.log("Form data:", formDataToSend);
       onAdded();
       onClose();
     } catch (err) {
@@ -116,11 +169,17 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                       : "bg-gray-300 text-gray-600"
                   }`}
                 >
-                  {currentStep > step.number ? <FaCheck size={14} /> : step.number}
+                  {currentStep > step.number ? (
+                    <FaCheck size={14} />
+                  ) : (
+                    step.number
+                  )}
                 </div>
                 <span
                   className={`ml-3 text-sm font-medium ${
-                    currentStep >= step.number ? "text-gray-800" : "text-gray-500"
+                    currentStep >= step.number
+                      ? "text-gray-800"
+                      : "text-gray-500"
                   }`}
                 >
                   {step.label}
@@ -128,7 +187,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
               </div>
               {index < steps.length - 1 && (
                 <div className="flex-1 mx-4">
-                  <FaArrowRight size={24} color='grey'/>
+                  <FaArrowRight size={24} color="grey" />
                 </div>
               )}
             </div>
@@ -156,18 +215,15 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category *
+                    Category
                   </label>
                   <select
                     name="categoryId"
                     value={formData.categoryId}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    disabled={categoriesLoading}
                   >
-                    <option value="">
-                      {categoriesLoading ? "Loading..." : "Accommodation type"}
-                    </option>
+                    <option value="">Accommodation type</option>
                     {categories?.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
@@ -180,7 +236,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nearest destination *
+                    Primary Destination ID *
                   </label>
                   <input
                     type="text"
@@ -256,6 +312,8 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                   </label>
                   <textarea
                     name="contactNote"
+                    value={formData.contactNote}
+                    onChange={handleChange}
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                     placeholder="Special instruction for guests"
@@ -296,18 +354,31 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
           {/* Step 2: Policies & Fees */}
           {currentStep === 2 && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price per Night (Rs.) *
+                    Min Nights *
                   </label>
                   <input
                     type="number"
-                    name="pricePerNight"
-                    value={formData.pricePerNight}
+                    name="minNights"
+                    value={formData.minNights}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="1499"
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Max Nights *
+                  </label>
+                  <input
+                    type="number"
+                    name="maxNights"
+                    value={formData.maxNights}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder="30"
                   />
                 </div>
                 <div>
@@ -354,46 +425,18 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Min Nights *
-                  </label>
-                  <input
-                    type="number"
-                    name="minNights"
-                    value={formData.minNights}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max Nights *
-                  </label>
-                  <input
-                    type="number"
-                    name="maxNights"
-                    value={formData.maxNights}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="30"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max Guests *
-                  </label>
-                  <input
-                    type="number"
-                    name="maxGuests"
-                    value={formData.maxGuests}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="5"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  House Rules
+                </label>
+                <textarea
+                  name="houseRules"
+                  value={formData.houseRules}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="No smoking, No pets, etc."
+                />
               </div>
             </div>
           )}
@@ -406,14 +449,28 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                   Amenities
                 </label>
                 <div className="border border-gray-300 rounded-lg p-4 min-h-32">
-                  <p className="text-gray-400 text-sm">Select amenities (WiFi, Parking, Pool, etc.)</p>
+                  <p className="text-gray-400 text-sm">
+                    Select amenities (WiFi, Parking, Pool, etc.)
+                  </p>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Images (Up to 5 images)
+                  Additional Destinations
                 </label>
+                <div className="border border-gray-300 rounded-lg p-4 min-h-24">
+                  <p className="text-gray-400 text-sm">
+                    Add related destination IDs
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Images (1-10 images required)
+                </label>
+
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                   <input
                     type="file"
@@ -421,6 +478,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                     accept="image/*"
                     className="hidden"
                     id="image-upload"
+                    onChange={handleImageChange} // 👈 important
                   />
                   <label
                     htmlFor="image-upload"
@@ -428,9 +486,29 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                   >
                     <div className="text-4xl mb-2">📷</div>
                     <p>Click to upload images</p>
-                    <p className="text-sm text-gray-400 mt-1">Maximum 5 images</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      1-10 images required
+                    </p>
                   </label>
                 </div>
+
+                {/* Preview section */}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-5 gap-2 mt-4">
+                    {images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className="h-20 w-full bg-gray-200 rounded flex items-center justify-center overflow-hidden"
+                      >
+                        <img
+                          src={img}
+                          alt={`upload-${idx}`}
+                          className="object-cover h-full w-full"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -462,40 +540,63 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
               {/* Basic Information Section */}
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm mr-3">1</span>
+                  <span className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm mr-3">
+                    1
+                  </span>
                   Basic Information
                 </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500 mb-1">Property Name</p>
-                    <p className="font-medium text-gray-800">{formData.name || "—"}</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.name || "—"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Category</p>
                     <p className="font-medium text-gray-800">
-                      {categories?.find(cat => cat.id === formData.categoryId)?.name || "—"}
+                      {categories?.find((cat) => cat.id === formData.categoryId)
+                        ?.name || "—"}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Address</p>
-                    <p className="font-medium text-gray-800">{formData.address || "—"}</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.address || "—"}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 mb-1">Nearest Destination</p>
-                    <p className="font-medium text-gray-800">{formData.primaryDestinationId || "—"}</p>
+                    <p className="text-gray-500 mb-1">Primary Destination ID</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.primaryDestinationId || "—"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Check-in Time</p>
-                    <p className="font-medium text-gray-800">{formData.checkInFrom || "—"}</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.checkInFrom || "—"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Check-out Time</p>
-                    <p className="font-medium text-gray-800">{formData.checkOutUntil || "—"}</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.checkOutUntil || "—"}
+                    </p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-gray-500 mb-1">Description</p>
-                    <p className="font-medium text-gray-800">{formData.description || "—"}</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.description || "—"}
+                    </p>
                   </div>
+                  {formData.contactNote && (
+                    <div className="col-span-2">
+                      <p className="text-gray-500 mb-1">Contact Note</p>
+                      <p className="font-medium text-gray-800">
+                        {formData.contactNote}
+                      </p>
+                    </div>
+                  )}
                   {(formData.lat || formData.lng) && (
                     <div className="col-span-2">
                       <p className="text-gray-500 mb-1">Location</p>
@@ -510,26 +611,42 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
               {/* Policies & Fees Section */}
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm mr-3">2</span>
+                  <span className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm mr-3">
+                    2
+                  </span>
                   Policies & Fees
                 </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500 mb-1">Price per Night</p>
+                    <p className="text-gray-500 mb-1">Min Nights</p>
                     <p className="font-medium text-gray-800">
-                      {formData.pricePerNight ? `Rs. ${formData.pricePerNight}` : "—"}
+                      {formData.minNights
+                        ? `${formData.minNights} nights`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1">Max Nights</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.maxNights
+                        ? `${formData.maxNights} nights`
+                        : "—"}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Cleaning Fee</p>
                     <p className="font-medium text-gray-800">
-                      {formData.cleaningFee ? `Rs. ${formData.cleaningFee}` : "—"}
+                      {formData.cleaningFee
+                        ? `Rs. ${formData.cleaningFee}`
+                        : "—"}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Service Fee</p>
                     <p className="font-medium text-gray-800">
-                      {formData.serviceFeePct ? `${formData.serviceFeePct}%` : "—"}
+                      {formData.serviceFeePct
+                        ? `${formData.serviceFeePct}%`
+                        : "—"}
                     </p>
                   </div>
                   <div>
@@ -538,55 +655,55 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                       {formData.taxPct ? `${formData.taxPct}%` : "—"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-gray-500 mb-1">Min Nights</p>
-                    <p className="font-medium text-gray-800">
-                      {formData.minNights ? `${formData.minNights} nights` : "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 mb-1">Max Nights</p>
-                    <p className="font-medium text-gray-800">
-                      {formData.maxNights ? `${formData.maxNights} nights` : "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 mb-1">Max Guests</p>
-                    <p className="font-medium text-gray-800">
-                      {formData.maxGuests ? `${formData.maxGuests} guests` : "—"}
-                    </p>
-                  </div>
+                  {formData.houseRules && (
+                    <div className="col-span-2">
+                      <p className="text-gray-500 mb-1">House Rules</p>
+                      <p className="font-medium text-gray-800">
+                        {formData.houseRules}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Media & Amenities Section */}
               <div className="border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm mr-3">3</span>
+                  <span className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm mr-3">
+                    3
+                  </span>
                   Media & Amenities
                 </h3>
                 <div className="space-y-4 text-sm">
                   <div>
                     <p className="text-gray-500 mb-1">Amenities</p>
                     <p className="font-medium text-gray-800">
-                      {formData.amenities?.length > 0 
-                        ? formData.amenities.join(", ") 
+                      {formData.amenities?.length > 0
+                        ? formData.amenities.join(", ")
                         : "No amenities selected"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1">Destinations</p>
+                    <p className="font-medium text-gray-800">
+                      {formData.destinations?.length > 0
+                        ? formData.destinations.join(", ")
+                        : "No additional destinations"}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Images</p>
                     <p className="font-medium text-gray-800">
-                      {formData.images?.length > 0 
-                        ? `${formData.images.length} image(s) uploaded` 
+                      {formData.images?.length > 0
+                        ? `${formData.images.length} image(s) uploaded`
                         : "No images uploaded"}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Publish Status</p>
                     <p className="font-medium text-gray-800">
-                      {formData.published 
-                        ? "✓ Will be published immediately" 
+                      {formData.published
+                        ? "✓ Will be published immediately"
                         : "Will remain as draft"}
                     </p>
                   </div>
