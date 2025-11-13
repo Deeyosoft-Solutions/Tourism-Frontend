@@ -38,7 +38,9 @@ const LocalProductPage = () => {
     limit: productsPerPage,
   });
 
-  const categories = categoriesData || [];
+  const categories = Array.isArray(categoriesData)
+    ? categoriesData
+    : categoriesData?.data || [];
   const totalProducts = productsData?.totalProducts || 0;
   const totalPages = Math.ceil(totalProducts / productsPerPage);
 
@@ -184,7 +186,7 @@ const LocalProductPage = () => {
                 src={
                   category.imageUrl
                     ? `${API_BASE_URL}${category.imageUrl}`
-                    : "/assets/Images/default-avatar-image.jpg"
+                    : "/assets/Images/png-logo.png"
                 }
                 alt={category.name}
                 className="w-full h-36 object-cover rounded-sm mb-2"

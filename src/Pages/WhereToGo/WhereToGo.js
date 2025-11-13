@@ -1,12 +1,12 @@
-import PopularDestinations from "./../../Component/WebContent/Home/PopularDestinations";
+import Destinations from "../../Component/WebContent/WhereToGo/Destinations";
+import ExplorePanchpokhari from "../../Component/WebContent/WhereToGo/ExplorePanchpokhari";
 import { Activities } from "../../Data/Activities";
-import ExplorePanchpokhari from "./../../Component/WebContent/WhereToGo/ExplorePanchpokhari";
 
 const WhereToGo = () => {
   return (
     <>
       <div className="sm:my-[30px] items-center justify-center px-3">
-        <PopularDestinations />
+        <Destinations />
       </div>
       <div className="sm:my-[30px] flex flex-col items-center justify-center py-3 px-auto bg-gray-50">
         <p className="font-Playfair text-xl font-medium text-center mb-2 md:mb-10">

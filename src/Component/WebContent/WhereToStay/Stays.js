@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import ImageCarousel from "./ImageCarousel";
 import { useNavigate } from "react-router-dom";
 import PaginationControls from "../../PaginationControls";
-import RatingStars from "../../RatingStars";
 import FilterComponent from "./FilterStays";
 import ErrorMessage from "../../ErrorMessage";
 import LoadingSpinner from "../../LoadingSpinner";
@@ -12,8 +10,6 @@ const Stays = () => {
   const [sort, setSort] = useState("recommended");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(4);
-
-  // Add filter state
   const [filters, setFilters] = useState({
     q: "",
     type: "",
@@ -33,16 +29,19 @@ const Stays = () => {
 
   const navigate = useNavigate();
 
-  // Fetch homestays from API
-  const { data: stays = [], isLoading, error } = useGetAccommodationsQuery();
+  // ✅ Fetch accommodations from API
+  const { data, isLoading, error } = useGetAccommodationsQuery();
 
-  // Apply filters (basic example)
+  // ✅ Safely extract stays array from API response
+  const stays = Array.isArray(data?.data) ? data.data : [];
+
+  // ✅ Apply filters
   const filteredStays = stays.filter((stay) => {
     let match = true;
 
     if (filters.q) {
       match =
-        match && stay.name.toLowerCase().includes(filters.q.toLowerCase());
+        match && stay.name?.toLowerCase().includes(filters.q.toLowerCase());
     }
 
     if (filters.type) {
@@ -50,43 +49,30 @@ const Stays = () => {
     }
 
     if (filters.minPrice) {
-      match = match && stay.pricePerNight >= Number(filters.minPrice);
+      match = match && (stay.fromPrice || 0) >= Number(filters.minPrice);
     }
 
     if (filters.maxPrice) {
-      match = match && stay.pricePerNight <= Number(filters.maxPrice);
+      match = match && (stay.fromPrice || 0) <= Number(filters.maxPrice);
     }
 
     return match;
   });
 
-  // Sorting logic
+  // ✅ Sorting logic
   const handleSort = (items) => {
     if (!Array.isArray(items)) return [];
     if (sort === "price-low-high") {
-      return [...items].sort(
-        (a, b) => (a.pricePerNight || 0) - (b.pricePerNight || 0)
-      );
+      return [...items].sort((a, b) => (a.fromPrice || 0) - (b.fromPrice || 0));
     } else if (sort === "price-high-low") {
-      return [...items].sort(
-        (a, b) => (b.pricePerNight || 0) - (a.pricePerNight || 0)
-      );
+      return [...items].sort((a, b) => (b.fromPrice || 0) - (a.fromPrice || 0));
     }
     return items;
   };
 
-  const sortedStays = handleSort([...filteredStays]);
+  const sortedStays = handleSort(filteredStays);
 
-  const getStayTypeColor = (stayType) => {
-    const colors = {
-      hotel: "#FF7F50",
-      lodge: "#1E90FF",
-      homestay: "#32CD32",
-    };
-    return colors[stayType] || "#000";
-  };
-
-  // Update items per page dynamically
+  // ✅ Update items per page dynamically
   const updateItemsPerPage = () => {
     const width = window.innerWidth;
     if (width >= 1280) setItemsPerPage(8);
@@ -101,6 +87,7 @@ const Stays = () => {
     return () => window.removeEventListener("resize", updateItemsPerPage);
   }, []);
 
+  // ✅ Pagination logic
   const totalPages = Math.ceil(sortedStays.length / itemsPerPage);
   const displayedStays = sortedStays.slice(
     (currentPage - 1) * itemsPerPage,
@@ -113,24 +100,23 @@ const Stays = () => {
     }
   };
 
+  // ✅ Handle stay click
   const handleStayClick = (slug) => {
     navigate(`/wheretostay/accomodation/${slug}`);
   };
 
   const gridColumnsClass =
-    "grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+    "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
+  // ✅ Loading & Error handling
   if (isLoading) return <LoadingSpinner fullScreen={true} size="medium" />;
   if (error)
     return (
-      <ErrorMessage
-        message="Failed to load accomodations."
-        className="my-4"
-      />
+      <ErrorMessage message="Failed to load accommodations." className="my-4" />
     );
 
   return (
-    <div className="flex flex-col md:flex-row py-2 px-4">
+    <div className="flex flex-col md:mx-24 md:flex-row py-2 px-4">
       <div className="w-full">
         {/* Filter Component */}
         <FilterComponent
@@ -153,47 +139,104 @@ const Stays = () => {
           </select>
         </div>
 
-        {/* Stays Grid */}
+        {/* ✅ Stays Grid */}
         <div className={`grid gap-4 ${gridColumnsClass}`}>
           {displayedStays.map((stay) => (
             <div
-              className="relative p-2 mb-4 cursor-pointer"
               key={stay.id}
-              onClick={() => handleStayClick(stay.slug)}
+              className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-200"
             >
-              <div className="border rounded-lg items-center mb-2 overflow-hidden">
-                <ImageCarousel
-                  images={stay.images || []}
-                  stayType={stay.type}
-                  getStayTypeColor={getStayTypeColor}
+              {/* Image Section */}
+              <div className="relative w-full h-52 overflow-hidden">
+                <img
+                  src={
+                    stay.images?.[0]
+                      ? `${process.env.REACT_APP_API_URL}${stay.images[0]}`
+                      : "/assets/Images/house0.jpg"
+                  }
+                  alt={stay.name}
+                  className="w-full h-full object-cover"
                 />
+                <span className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-3 py-1 rounded-full capitalize">
+                  {stay.type || "Stay"}
+                </span>
               </div>
 
-              <div className="py-1">
-                <h2 className="font-medium text-[14px] md:text-[16px] font-Open">
-                  {stay.name}
-                </h2>
-                <div className="flex flex-col md:flex-row text-[12px] md:text-[14px]">
-                  <p className="text-gray-700">{stay.address}</p>
-                  {stay.contact && (
-                    <p className="text-gray-700 md:pl-2">
-                      Mobile: {stay.contact}
-                    </p>
-                  )}
+              {/* Content Section */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-[16px] font-semibold text-gray-900 truncate">
+                    {stay.name}
+                  </h2>
+                  <div className="flex items-center gap-1 text-gray-600 text-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      className="w-4 h-4 text-yellow-400"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.286 3.97c.3.921-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.176 0l-3.385 2.46c-.784.57-1.838-.197-1.539-1.118l1.286-3.97a1 1 0 00-.364-1.118l-3.385-2.46c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z" />
+                    </svg>
+                    <span>{stay.rating || "4.5"}</span>
+                  </div>
                 </div>
-                <RatingStars rating={stay.rating || 0} />
-                <p className="font-bold mt-2 font-Open text-[15px] md:text-[17px]">
-                  NRS {stay.pricePerNight}{" "}
-                  <span className="text-[13px] md:text-[15px] font-medium">
-                    / night
-                  </span>
+
+                <p className="text-gray-600 text-sm mb-3 flex items-center gap-1">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    className="w-4 h-4 text-gray-500"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 2C6.686 2 4 4.686 4 8c0 3.632 3.833 8.415 5.534 10.451a1 1 0 001.532 0C12.167 16.415 16 11.632 16 8c0-3.314-2.686-6-6-6zM8 8a2 2 0 114 0 2 2 0 01-4 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {stay.address || "Location not specified"}
                 </p>
+
+                {/* Amenities Info */}
+                <div className="flex flex-wrap gap-3 text-gray-600 text-sm mb-4">
+                  <span>👥 {stay.guests || "2"}</span>
+                  <span>🛏️ {stay.beds || "1"} beds</span>
+                  <span>🛁 {stay.baths || "1"} baths</span>
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {["Kathmandu", "City", stay.type || "Villa"].map((tag, i) => (
+                    <span
+                      key={i}
+                      className="bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Price & Button */}
+                <div className="flex items-center justify-between">
+                  <p className="text-red-500 font-bold text-lg">
+                    ${stay.fromPrice?.toLocaleString() || "1,299.00"}{" "}
+                    <span className="text-gray-600 text-sm font-normal">
+                      per Night
+                    </span>
+                  </p>
+                  <button
+                    onClick={() => handleStayClick(stay.slug)}
+                    className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg transition"
+                  >
+                    View Details
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Pagination */}
+        {/* ✅ Pagination */}
         {totalPages > 1 && (
           <PaginationControls
             currentPage={currentPage}

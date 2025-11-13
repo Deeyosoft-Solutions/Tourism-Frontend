@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { explore } from "./../../../Data/ExplorePanchpokhari";
-import DestinationCarousel from './../Home/Carousel/DestinationCarousel';
+import { explore } from "../../../Data/ExplorePanchpokhari";
+import DestinationCarousel from '../Home/Carousel/DestinationCarousel';
 
-const ExplorePanchpokhari = () => {
+const ExplorePanchpokhari = () => { 
   const [currentPage, setCurrentPage] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
   const [imagesPerSlide, setImagesPerSlide] = useState(4);

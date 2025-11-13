@@ -1,10 +1,9 @@
 import { useLocation } from "react-router-dom";
-// import AdminRoomsCreate from "./Hotels-Resorts/RoomType/CreateRoomTypes";
 import ForAdminBookings from "./Bookings/AllBookings";
 import AdminAccomodationsOverview from "./AccomodationsOverview";
 import AdminAccomodationTable from "./AdminAccomodationTable";
 import AccommodationType from "./AccommodationTypes/AddStayTypes";
-import ForAdminAddStay from "./AdminAddStays";
+import ForAdminAddStay from "./AdminStays/AdminAddStays";
 
 const AllAccomodations = () => {
   const location = useLocation();
@@ -18,10 +17,8 @@ const AllAccomodations = () => {
   const renderView = () => {
     switch (view) {
       case "stays":
-        // Handle stays submenu directly
         if (stayView === "all") return <AdminAccomodationTable />;
         if (showType) return <AccommodationType />;
-        // if (showRooms) return <AdminRoomsCreate />;
         if (stayView === "add") return <ForAdminAddStay />;
         return <AdminAccomodationTable />;
 

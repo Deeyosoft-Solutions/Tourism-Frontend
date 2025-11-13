@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaTimes, FaCheck, FaArrowRight } from "react-icons/fa";
-import { useGetAccomodationCategoriesQuery } from "../../../../Services/accomodationCategoryApiSlice";
-import { useAddAccommodationMutation } from "../../../../Services/accomodationApiSlice";
+import { useGetAccomodationCategoriesQuery } from "../../../../../Services/accomodationCategoryApiSlice";
+import { useUpdateAccommodationMutation } from "../../../../../Services/accomodationApiSlice";
 
-const ForAdminAddStay = ({ onClose, onAdded }) => {
-  const [addAccommodation, { isLoading }] = useAddAccommodationMutation();
+const ForAdminUpdateStay = ({ onClose, onUpdated, accommodation }) => {
+  const [updateAccommodation, { isLoading }] = useUpdateAccommodationMutation();
   const { data: categoriesData } = useGetAccomodationCategoriesQuery();
   const [currentStep, setCurrentStep] = useState(1);
   const [images, setImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -35,6 +36,39 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
   const [error, setError] = useState("");
   const categories = categoriesData?.data || [];
 
+  // Populate form with existing accommodation data
+  useEffect(() => {
+    if (accommodation) {
+      setFormData({
+        name: accommodation.name || "",
+        description: accommodation.description || "",
+        address: accommodation.address || "",
+        categoryId: accommodation.categoryId || "",
+        checkInFrom: accommodation.checkInFrom || "10:00 AM",
+        checkOutUntil: accommodation.checkOutUntil || "12:00 PM",
+        primaryDestinationId: accommodation.primaryDestinationId || "",
+        lat: accommodation.lat || "",
+        lng: accommodation.lng || "",
+        cleaningFee: accommodation.cleaningFee || "",
+        serviceFeePct: accommodation.serviceFeePct || "",
+        taxPct: accommodation.taxPct || "",
+        minNights: accommodation.minNights || "",
+        maxNights: accommodation.maxNights || "",
+        houseRules: accommodation.houseRules || "",
+        contactNote: accommodation.contactNote || "",
+        amenities: accommodation.amenities || [],
+        destinations: accommodation.destinations || [],
+        images: [],
+        published: accommodation.published || false,
+      });
+
+      // Set existing images (URLs from server)
+      if (accommodation.images && accommodation.images.length > 0) {
+        setExistingImages(accommodation.images);
+      }
+    }
+  }, [accommodation]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -48,11 +82,15 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
     const imageUrls = files.map((file) => URL.createObjectURL(file));
     setImages(imageUrls);
 
-    // also store the actual File objects
+    // Store the actual File objects
     setFormData({
       ...formData,
       images: files,
     });
+  };
+
+  const handleRemoveExistingImage = (index) => {
+    setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
   const handleNext = () => {
@@ -68,11 +106,6 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
       }
     } else if (currentStep === 2) {
       if (!formData.minNights || !formData.maxNights) {
-        setError("Please fill all required fields.");
-        return;
-      }
-    } else if (currentStep === 3) {
-      if (!formData.images) {
         setError("Please fill all required fields.");
         return;
       }
@@ -99,19 +132,20 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
       return;
     }
 
-    if (
-      !formData.images ||
-      formData.images.length < 1 ||
-      formData.images.length > 10
-    ) {
-      setError("Please upload between 1 and 10 images.");
+    // Check total images (existing + new)
+    const totalImages = existingImages.length + (formData.images?.length || 0);
+    if (totalImages < 1 || totalImages > 10) {
+      setError("Please ensure you have between 1 and 10 images total.");
       return;
     }
 
     try {
       const formDataToSend = new FormData();
+      
+      // Add all form fields
       for (const key in formData) {
         if (key === "images") {
+          // Add new images
           formData.images.forEach((file) => {
             formDataToSend.append("images", file);
           });
@@ -122,13 +156,20 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
         }
       }
 
-      await addAccommodation(formDataToSend).unwrap();
-      console.log("Form data:", formDataToSend);
-      onAdded();
+      // Add existing images that weren't removed
+      formDataToSend.append("existingImages", JSON.stringify(existingImages));
+
+      await updateAccommodation({
+        id: accommodation.id,
+        data: formDataToSend,
+      }).unwrap();
+      
+      console.log("Updated accommodation successfully");
+      onUpdated();
       onClose();
     } catch (err) {
-      console.error("Failed to add accommodation:", err);
-      setError("Failed to add accommodation. Please try again.");
+      console.error("Failed to update accommodation:", err);
+      setError("Failed to update accommodation. Please try again.");
     }
   };
 
@@ -145,7 +186,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-800">
-            List Accommodation
+            Update Accommodation
           </h2>
           <button
             onClick={onClose}
@@ -471,6 +512,37 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                   Images (1-10 images required)
                 </label>
 
+                {/* Existing Images */}
+                {existingImages.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Current Images ({existingImages.length})
+                    </p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {existingImages.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="relative h-20 w-full bg-gray-200 rounded overflow-hidden group"
+                        >
+                          <img
+                            src={img}
+                            alt={`existing-${idx}`}
+                            className="object-cover h-full w-full"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExistingImage(idx)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <FaTimes size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload New Images */}
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                   <input
                     type="file"
@@ -478,35 +550,40 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                     accept="image/*"
                     className="hidden"
                     id="image-upload"
-                    onChange={handleImageChange} // 👈 important
+                    onChange={handleImageChange}
                   />
                   <label
                     htmlFor="image-upload"
                     className="cursor-pointer text-gray-500"
                   >
                     <div className="text-4xl mb-2">📷</div>
-                    <p>Click to upload images</p>
+                    <p>Click to upload new images</p>
                     <p className="text-sm text-gray-400 mt-1">
-                      1-10 images required
+                      Total images: {existingImages.length + images.length}/10
                     </p>
                   </label>
                 </div>
 
-                {/* Preview section */}
+                {/* Preview new images */}
                 {images.length > 0 && (
-                  <div className="grid grid-cols-5 gap-2 mt-4">
-                    {images.map((img, idx) => (
-                      <div
-                        key={idx}
-                        className="h-20 w-full bg-gray-200 rounded flex items-center justify-center overflow-hidden"
-                      >
-                        <img
-                          src={img}
-                          alt={`upload-${idx}`}
-                          className="object-cover h-full w-full"
-                        />
-                      </div>
-                    ))}
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      New Images ({images.length})
+                    </p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {images.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="h-20 w-full bg-gray-200 rounded flex items-center justify-center overflow-hidden"
+                        >
+                          <img
+                            src={img}
+                            alt={`upload-${idx}`}
+                            className="object-cover h-full w-full"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -521,7 +598,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                     className="w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500"
                   />
                   <span className="text-sm font-medium text-gray-700">
-                    Publish accommodation immediately *
+                    Publish accommodation
                   </span>
                 </label>
               </div>
@@ -533,7 +610,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <p className="text-blue-800 text-sm font-medium">
-                  Please review all information before submitting
+                  Please review all changes before updating
                 </p>
               </div>
 
@@ -694,17 +771,16 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                   <div>
                     <p className="text-gray-500 mb-1">Images</p>
                     <p className="font-medium text-gray-800">
-                      {formData.images?.length > 0
-                        ? `${formData.images.length} image(s) uploaded`
-                        : "No images uploaded"}
+                      {existingImages.length + (formData.images?.length || 0)} image(s) total
+                      {formData.images?.length > 0 && ` (${formData.images.length} new)`}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Publish Status</p>
                     <p className="font-medium text-gray-800">
                       {formData.published
-                        ? "✓ Will be published immediately"
-                        : "Will remain as draft"}
+                        ? "✓ Published"
+                        : "Draft"}
                     </p>
                   </div>
                 </div>
@@ -745,7 +821,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
               disabled={isLoading}
               className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium disabled:opacity-50"
             >
-              {isLoading ? "Submitting..." : "Submit"}
+              {isLoading ? "Updating..." : "Update Accommodation"}
             </button>
           )}
         </div>
@@ -754,4 +830,4 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
   );
 };
 
-export default ForAdminAddStay;
+export default ForAdminUpdateStay;

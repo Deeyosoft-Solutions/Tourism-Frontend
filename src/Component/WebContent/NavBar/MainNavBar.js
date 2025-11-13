@@ -11,6 +11,7 @@ const MainNavBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const toggleDropDown = () => {
     setIsDropdownOpen((prevState) => !prevState);
@@ -40,12 +41,25 @@ const MainNavBar = () => {
     }
   }, [accessToken, data, dispatch]);
 
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     dispatch(logout());
     setIsLoggedIn(false);
     navigate(`/login`);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
+    handleLogout();
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -55,8 +69,7 @@ const MainNavBar = () => {
 
   return (
     <nav
-      className={`${"absolute top-0 left-0 w-full z-20 bg-transparent flex justify-between items-center px-4 py-2"
-      }`}
+      className={`${"absolute top-0 left-0 w-full z-20 bg-transparent flex justify-between items-center px-4 py-2"}`}
     >
       <p className="text-red-700 font-redressed lg:text-[24px] md:text-[14px] md:px-2 lg:px-5">
         Panchpokhari Tourism
@@ -141,14 +154,19 @@ const MainNavBar = () => {
                 className="flex items-center space-x-2 bg-transparent hover:bg-gray-100 hover:text-black text-white rounded-full py-2 px-1 transition-all duration-200"
               >
                 {/* User Image */}
-                <img
-                  src={
-                    `${API_BASE_URL}/${images}` ||
-                    "/assets/Images/default-avatar-image.jpg"
-                  }
-                  alt="User"
-                  className="w-10 h-10 rounded-full border-2 border-gray-400 object-cover"
-                />
+                {images ? (
+                  <img
+                    src={`${API_BASE_URL}${images}`}
+                    alt="User"
+                    className="w-10 h-10 rounded-full border-2 border-gray-400 object-cover"
+                  />
+                ) : (
+                  <img
+                    src="/assets/Images/default-avatar-image.jpg"
+                    alt="User"
+                    className="w-10 h-10 rounded-full border-2 border-gray-400 object-cover"
+                  />
+                )}
                 <div className="hidden md:block text-left">
                   <p className="font-medium text-sm">
                     {data?.username || "Username"}
@@ -183,14 +201,20 @@ const MainNavBar = () => {
                   {/* User Info Header */}
                   <div className="bg-gray-50 p-4 border-b border-gray-100">
                     <div className="flex items-center">
-                      <img
-                        src={
-                          `${API_BASE_URL}/${images}` ||
-                          "/assets/Images/default-avatar-image.jpg"
-                        }
-                        alt="User"
-                        className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
-                      />
+                      {images ? (
+                        <img
+                          src={`${API_BASE_URL}${images}`}
+                          alt="User"
+                          className="w-10 h-10 rounded-full border-2 border-gray-400 object-cover"
+                        />
+                      ) : (
+                        <img
+                          src="/assets/Images/default-avatar-image.jpg"
+                          alt="User"
+                          className="w-10 h-10 rounded-full border-2 border-gray-400 object-cover"
+                        />
+                      )}
+
                       <div className="ml-3">
                         <p className="font-semibold">
                           {data?.username || "Username"}
@@ -285,9 +309,9 @@ const MainNavBar = () => {
                   <div className="border-t border-gray-100"></div>
 
                   {/* Log Out Button */}
-                  <div className="p-3">
+                  <div className="p-3 relative">
                     <button
-                      onClick={handleLogout}
+                      onClick={handleLogoutClick}
                       className="w-full flex items-center justify-center px-4 py-2 text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-md transition-colors shadow-sm"
                     >
                       <svg
@@ -306,6 +330,28 @@ const MainNavBar = () => {
                       </svg>
                       Logout
                     </button>
+                    {/* Confirmation Popup */}
+                    {showLogoutConfirm && (
+                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50">
+                        <p className="text-gray-800 font-medium mb-3">
+                          Do you want to logout?
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleConfirmLogout}
+                            className="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors text-sm font-medium"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={handleCancelLogout}
+                            className="flex-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition-colors text-sm font-medium"
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

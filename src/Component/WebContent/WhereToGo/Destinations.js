@@ -1,18 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGetPublishedDestinationsQuery } from "../../../Services/destinationApiSlice";
-import LoadingSpinner from "./../../LoadingSpinner";
+import LoadingSpinner from "../../LoadingSpinner";
+import DestinationFilter from "./Filterdestinations";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-const PopularDestinations = () => {
+const Destinations = () => {
   const [startIndex, setStartIndex] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
   const [imagesPerSlide, setImagesPerSlide] = useState(4);
+  const [filteredDestinations, setFilteredDestinations] = useState([]);
   const navigate = useNavigate();
 
   const { data, isLoading, error } = useGetPublishedDestinationsQuery();
-  const destinations = data?.data || [];
+  const destinations = useMemo(() => data?.data || [], [data]);
+
+  // Initialize filtered destinations when data loads
+  useEffect(() => {
+    setFilteredDestinations(destinations);
+  }, [destinations]);
 
   // Responsive slides
   useEffect(() => {
@@ -29,12 +36,12 @@ const PopularDestinations = () => {
 
   // Carousel navigation
   const goToPrevSlide = () => {
-    if (!isSliding && destinations.length > imagesPerSlide) {
+    if (!isSliding && filteredDestinations.length > imagesPerSlide) {
       setIsSliding(true);
       setTimeout(() => {
         setStartIndex((prevIndex) =>
           prevIndex === 0
-            ? destinations.length - imagesPerSlide
+            ? filteredDestinations.length - imagesPerSlide
             : prevIndex - imagesPerSlide
         );
         setIsSliding(false);
@@ -43,11 +50,11 @@ const PopularDestinations = () => {
   };
 
   const goToNextSlide = () => {
-    if (!isSliding && destinations.length > imagesPerSlide) {
+    if (!isSliding && filteredDestinations.length > imagesPerSlide) {
       setIsSliding(true);
       setTimeout(() => {
         setStartIndex((prevIndex) =>
-          prevIndex + imagesPerSlide >= destinations.length
+          prevIndex + imagesPerSlide >= filteredDestinations.length
             ? 0
             : prevIndex + imagesPerSlide
         );
@@ -69,13 +76,17 @@ const PopularDestinations = () => {
 
   if (error)
     return (
-      <p className="text-center text-red-500">
-        Failed to load destinations.
-      </p>
+      <p className="text-center text-red-500">Failed to load destinations.</p>
     );
 
   return (
     <div className="py-10 px-4">
+      {/* Filter */}
+      <DestinationFilter
+        data={destinations}
+        onFilter={setFilteredDestinations}
+      />
+
       {/* Section Header */}
       <div className="flex justify-between items-center mb-8">
         <div className="flex md:space-x-4 items-center gap-2 md:gap-16 justify-center mx-auto">
@@ -105,14 +116,12 @@ const PopularDestinations = () => {
             transform: `translateX(-${(startIndex / imagesPerSlide) * 100}%)`,
           }}
         >
-          {destinations.map((destination) => {
-            // Pick first image, or heroImageUrl, or default
-            const imageUrl =
-              destination.images?.[0]
-                ? `${API_BASE_URL}${destination.images[0]}`
-                : destination.heroImageUrl
-                ? `${API_BASE_URL}${destination.heroImageUrl}`
-                : "/assets/Images/png-logo.png";
+          {filteredDestinations.map((destination) => {
+            const imageUrl = destination.images?.[0]
+              ? `${API_BASE_URL}${destination.images[0]}`
+              : destination.heroImageUrl
+              ? `${API_BASE_URL}${destination.heroImageUrl}`
+              : "/assets/Images/png-logo.png";
 
             return (
               <div
@@ -121,7 +130,6 @@ const PopularDestinations = () => {
                 className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 flex-shrink-0 p-3 cursor-pointer"
               >
                 <div className="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 flex flex-col">
-                  {/* Image Section */}
                   <div className="w-full h-52">
                     <img
                       src={imageUrl}
@@ -129,8 +137,6 @@ const PopularDestinations = () => {
                       className="w-full h-full object-cover"
                     />
                   </div>
-
-                  {/* Info Section */}
                   <div className="p-4 flex flex-col justify-between flex-grow">
                     <div>
                       <h3 className="text-gray-900 font-semibold text-[16px] truncate mb-1">
@@ -152,8 +158,6 @@ const PopularDestinations = () => {
                         {destination.location || "Unknown Location"}
                       </p>
                     </div>
-
-                    {/* Optional Tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       {destination.tags?.slice(0, 3)?.map((tag, i) => (
                         <span
@@ -164,8 +168,6 @@ const PopularDestinations = () => {
                         </span>
                       ))}
                     </div>
-
-                    {/* Button */}
                     <div className="flex justify-end">
                       <button
                         onClick={(e) => {
@@ -188,4 +190,4 @@ const PopularDestinations = () => {
   );
 };
 
-export default PopularDestinations;
+export default Destinations;

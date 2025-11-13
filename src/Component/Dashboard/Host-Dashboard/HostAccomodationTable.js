@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import {
-  useGetAccommodationsQuery,
+  useGetAccommodationsByHostQuery,
   useDeleteAccommodationMutation,
-} from "../../../../Services/accomodationApiSlice";
-import ForAdminAddStay from "./AdminStays/AdminAddStays";
-import AccommodationDetailsView from "./AccomodationDetailsView";
-import LoadingSpinner from "./../../../LoadingSpinner";
-import ErrorMessage from "../../../ErrorMessage";
-import ForAdminUpdateStay from "./AdminStays/AdminUpdateStays";
+} from "../../../Services/accomodationApiSlice";
+import ForAdminAddStay from "./HostStays/HostAddStays";
+import HostAccommodationDetailsView from "./HostAccomodationDetailsView";
+import ForAdminUpdateStay from "./HostStays/HostUpdateStays";
+import ErrorMessage from "../../ErrorMessage";
+import LoadingSpinner from './../../LoadingSpinner';
+import { useFetchUserProfileQuery } from "../../../Services/userApiSlice";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const AdminAccomodationTable = () => {
+    const { data:userData } = useFetchUserProfileQuery();
   const { data, isLoading, isError, error, refetch } =
-    useGetAccommodationsQuery();
+    useGetAccommodationsByHostQuery(userData.id);
   const [deleteAccommodation] = useDeleteAccommodationMutation();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -51,7 +53,7 @@ const AdminAccomodationTable = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {selectedAccommodation ? (
-        <AccommodationDetailsView
+        <HostAccommodationDetailsView
           accommodation={selectedAccommodation}
           onClose={() => setSelectedAccommodation(null)}
         />

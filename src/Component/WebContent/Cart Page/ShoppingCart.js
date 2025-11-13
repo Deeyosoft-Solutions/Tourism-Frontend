@@ -14,7 +14,6 @@ import { useNavigate } from "react-router-dom";
 
 const ShoppingCartPage = () => {
   const navigate = useNavigate();
-  // RTK Query hooks
   const { data: cartData, isLoading, isError, refetch } = useGetCartQuery();
   const [removeFromCart] = useRemoveFromCartMutation();
   const [clearCart] = useClearCartMutation();

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
+const FALLBACK_IMAGE = "/assets/Images/house0.jpg"; 
 
 const ArrowButton = ({ direction, onClick }) => (
   <button
@@ -16,50 +17,43 @@ const ArrowButton = ({ direction, onClick }) => (
 
 const ImageCarousel = ({ images = [], stayType, getStayTypeColor }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   const goToPrevSlide = () => {
     setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
     );
+    setImageError(false);
   };
 
   const goToNextSlide = () => {
     setCurrentIndex((prevIndex) =>
       prevIndex === images.length - 1 ? 0 : prevIndex + 1
     );
+    setImageError(false);
   };
 
-  const handleImageError = (e) => {
-    console.error("Image failed to load:", e.target.src);
-    e.target.style.display = "none";
-    e.target.nextSibling.style.display = "flex";
+  const handleImageError = () => {
+    setImageError(true);
   };
+
+  const currentImage =
+    images?.length > 0
+      ? images[currentIndex]?.startsWith("http")
+        ? images[currentIndex]
+        : `${API_BASE_URL}${images[currentIndex]}`
+      : FALLBACK_IMAGE;
 
   return (
     <div className="relative group overflow-hidden rounded-lg hover:border-gray-400 hover:border">
       {/* Image Container */}
       <div className="relative w-full h-80 overflow-hidden transition-transform duration-300 group-hover:scale-105">
-        {images?.length > 0 ? (
-          <>
-            <img
-              src={
-                images[currentIndex]?.startsWith("http")
-                  ? images[currentIndex]
-                  : `${API_BASE_URL}${images[currentIndex]}`
-              }
-              alt={`Slide ${currentIndex + 1}`}
-              className="w-full h-full object-cover"
-              onError={handleImageError}
-            />
-            <div className="absolute inset-0 w-full h-full items-center justify-center text-gray-500 bg-gray-100 hidden">
-              Image not available
-            </div>
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-100">
-            No images available
-          </div>
-        )}
+        <img
+          src={imageError ? FALLBACK_IMAGE : currentImage}
+          alt={`Slide ${currentIndex + 1}`}
+          className="w-full h-full object-cover"
+          onError={handleImageError}
+        />
       </div>
 
       {/* Custom Arrow Buttons */}
@@ -86,7 +80,10 @@ const ImageCarousel = ({ images = [], stayType, getStayTypeColor }) => {
           {images.map((_, index) => (
             <button
               key={index}
-              onClick={() => setCurrentIndex(index)}
+              onClick={() => {
+                setCurrentIndex(index);
+                setImageError(false);
+              }}
               className={`w-2 h-2 rounded-full ${
                 index === currentIndex ? "bg-white" : "bg-gray-400"
               }`}

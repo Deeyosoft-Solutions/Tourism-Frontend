@@ -17,6 +17,8 @@ import { accommodationCategoryApi } from "../Services/accomodationCategoryApiSli
 import { accommodationApi } from "../Services/accomodationApiSlice";
 import { accommodationBookingApi } from "../Services/accommodationBooking";
 import { travelBookingsApi } from "../Services/travelBookings";
+import { roomsApi } from "../Services/accommodationRoomApiSlice";
+import { roomUnitsApi } from "../Services/acccommodationRoomUnitsApi";
 
 export const store = configureStore({
   reducer: {
@@ -37,6 +39,8 @@ export const store = configureStore({
     [departuresApi.reducerPath]: departuresApi.reducer,
     [accommodationBookingApi.reducerPath]: accommodationBookingApi.reducer,
     [travelBookingsApi.reducerPath]: travelBookingsApi.reducer,
+    [roomsApi.reducerPath]: roomsApi.reducer,
+    [roomUnitsApi.reducerPath]: roomUnitsApi.reducer, 
     auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -57,7 +61,10 @@ export const store = configureStore({
       travelPackageApi.middleware,
       departuresApi.middleware,
       accommodationBookingApi.middleware,
-      travelBookingsApi.middleware
+      travelBookingsApi.middleware,
+      roomsApi.middleware,
+      roomUnitsApi.middleware
+
     ),
 });
 

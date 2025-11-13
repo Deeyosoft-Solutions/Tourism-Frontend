@@ -9,7 +9,7 @@ import Home from "./../Pages/Home/Home";
 import CategoryPage from "./../Pages/Category/CategoryDisplay";
 import ProductPage from "./../Pages/Products/ProductDisplay";
 import LocalProducts from "./../Pages/Local Products/LocalProducts";
-import DestinationPage from "../Pages/WhereToGo/Destinations/Destinations";
+import DestinationPage from "../Pages/WhereToGo/Destinations/DestinationsPage";
 import AccomodationPage from "../Pages/WhereToStay/Accomodations/AccomodationPage";
 import TravelPackages from "../Pages/Travel Packages/TravelPackages";
 import RegisterPage from "../Pages/Sign Up/SignUp";
