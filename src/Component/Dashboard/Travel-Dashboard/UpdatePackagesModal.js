@@ -50,7 +50,7 @@ const UpdateTravelPackageModal = ({
   );
 
   const formik = useFormik({
-    enableReinitialize: true, // ✅ This allows Formik to update when initialValues change
+    enableReinitialize: true,
     initialValues: {
       name: initialValues?.name || "",
       description: initialValues?.description || "",
@@ -88,11 +88,43 @@ const UpdateTravelPackageModal = ({
     },
   });
 
+  // Gallery image handlers
+  const handleGalleryChange = (e) => {
+    const files = Array.from(e.target.files).slice(0, 5);
+    setImagePreviews((prev) => [
+      ...prev.slice(0, 5 - files.length),
+      ...files.map((f) => URL.createObjectURL(f)),
+    ]);
+    formik.setFieldValue("images", files);
+  };
+
+  const removeGalleryImage = (index) => {
+    const newPreviews = [...imagePreviews];
+    const newImages = [...formik.values.images];
+
+    if (newPreviews[index]?.startsWith("blob:"))
+      URL.revokeObjectURL(newPreviews[index]);
+    newPreviews.splice(index, 1);
+    newImages.splice(index, 1);
+
+    setImagePreviews(newPreviews);
+    formik.setFieldValue("images", newImages);
+  };
+
+  // Cover image remove
+  const removeCoverImage = () => {
+    if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview);
+    setCoverPreview(null);
+    formik.setFieldValue("coverImage", null);
+  };
+
   // Cleanup previews
   useEffect(() => {
     return () => {
-      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
-      if (coverPreview) URL.revokeObjectURL(coverPreview);
+      imagePreviews.forEach(
+        (url) => url.startsWith("blob:") && URL.revokeObjectURL(url)
+      );
+      if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview);
     };
   }, [coverPreview, imagePreviews]);
 
@@ -121,18 +153,26 @@ const UpdateTravelPackageModal = ({
               Cover Image
             </label>
             <div className="flex items-center space-x-4">
-              <div className="w-32 h-32 border border-gray-300 rounded-md flex items-center justify-center overflow-hidden bg-gray-100">
+              <div className="w-32 h-32 border border-gray-300 rounded-md flex items-center justify-center overflow-hidden bg-gray-100 relative">
                 {coverPreview ? (
-                  <img
-                    src={coverPreview}
-                    alt="Cover Preview"
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={coverPreview}
+                      alt="Cover Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeCoverImage}
+                      className="absolute top-1 right-1 bg-white rounded-full p-1 text-red-500 hover:bg-gray-200"
+                    >
+                      <FaTimes className="w-3 h-3" />
+                    </button>
+                  </>
                 ) : (
                   <span className="text-gray-400">+</span>
                 )}
               </div>
-
               <div>
                 <input
                   type="file"
@@ -161,23 +201,26 @@ const UpdateTravelPackageModal = ({
               Gallery Images
             </label>
             <div className="grid grid-cols-5 gap-2 mb-2">
-              {[...Array(5)].map((_, index) => (
+              {[...Array(5)].map((_, idx) => (
                 <div
-                  key={index}
-                  className="w-24 h-24 border border-gray-300 flex items-center justify-center"
+                  key={idx}
+                  className="w-24 h-24 border border-gray-300 flex items-center justify-center relative"
                 >
-                  {formik.values.images[index] ? (
-                    <img
-                      src={URL.createObjectURL(formik.values.images[index])}
-                      alt="Upload preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : imagePreviews[index] ? (
-                    <img
-                      src={imagePreviews[index]}
-                      alt="Existing preview"
-                      className="w-full h-full object-cover"
-                    />
+                  {imagePreviews[idx] ? (
+                    <>
+                      <img
+                        src={imagePreviews[idx]}
+                        alt={`Preview ${idx}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(idx)}
+                        className="absolute top-1 right-1 bg-white rounded-full p-1 text-red-500 hover:bg-gray-200"
+                      >
+                        <FaTimes className="w-3 h-3" />
+                      </button>
+                    </>
                   ) : (
                     <span className="text-gray-400 cursor-pointer">+</span>
                   )}
@@ -187,10 +230,7 @@ const UpdateTravelPackageModal = ({
             <input
               type="file"
               multiple
-              onChange={(e) => {
-                const files = Array.from(e.target.files).slice(0, 5);
-                formik.setFieldValue("images", files);
-              }}
+              onChange={handleGalleryChange}
               className="hidden"
               id="image-upload"
               accept="image/*"
@@ -292,7 +332,6 @@ const UpdateTravelPackageModal = ({
                 + Add
               </button>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 What's Not Included

@@ -14,6 +14,8 @@ import ErrorToast from "../../Component/ErrorToast";
 import CustomerFeedbackContainer from "../../Component/WebContent/Reviews/CustomerFeedbackContainer";
 import { useGetAverageReviewQuery } from "../../Services/feedbackApiSlice";
 import { skipToken } from "@reduxjs/toolkit/query";
+import LoadingSpinner from "../../Component/LoadingSpinner";
+import ErrorMessage from "../../Component/ErrorMessage";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -87,8 +89,8 @@ const ProductPage = () => {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError || !product) return <div>Product details are not available.</div>;
+  if (isLoading) return <LoadingSpinner />;
+  if (isError || !product) return <ErrorMessage message="Failed to load products." />;
 
   const images = product.images || [];
 

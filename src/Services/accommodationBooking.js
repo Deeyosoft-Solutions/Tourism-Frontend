@@ -5,10 +5,16 @@ export const accommodationBookingApi = createApi({
   reducerPath: "accommodationBookingApi",
   baseQuery,
   endpoints: (builder) => ({
-    getBookings: builder.query({
+    getAccommodationBookings: builder.query({
       query: () => "/booking",
+    }),
+    getBookingsByAccommodationId: builder.query({
+      query: (accommodationId) => `/booking/accommodation/${accommodationId}`,
     }),
   }),
 });
 
-export const { useGetBookingsQuery } = accommodationBookingApi;
+export const { 
+  useGetAccommodationBookingsQuery,
+  useGetBookingsByAccommodationIdQuery 
+} = accommodationBookingApi;

@@ -105,15 +105,21 @@ const AdminAccomodationTable = () => {
                       className="border-b hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4">
-                        <img
-                          src={
-                            acc.images?.[0]
-                              ? `${API_BASE_URL}${acc.images[0]}`
-                              : "/placeholder.png"
-                          }
-                          alt={acc.name}
-                          className="w-16 h-16 object-cover rounded-md border"
-                        />
+                        {acc.images?.[0] ? (
+                          <img
+                            src={
+                              acc.images?.[0]
+                                ? `${API_BASE_URL}${acc.images[0]}`
+                                : "/placeholder.png"
+                            }
+                            alt="No Images"
+                            className="w-16 h-16 object-cover rounded-md border"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-md bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                            No Image
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-800">
                         {acc.name}

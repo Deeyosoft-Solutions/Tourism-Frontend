@@ -15,7 +15,6 @@ const CategoryPage = () => {
     data: categoryProduct,
     isLoading,
     isError,
-    error,
   } = useGetProductsByCategorySlugQuery(slug);
 
   // Get products from response or empty array if not available
@@ -201,7 +200,7 @@ const CategoryPage = () => {
   if (isLoading) return <LoadingSpinner fullScreen />;
   if (isError)
     return (
-      <ErrorMessage message={error?.message || "Error loading products"} />
+      <ErrorMessage message="Failed to load categories." />
     );
 
   return (

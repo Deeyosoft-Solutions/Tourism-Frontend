@@ -5,6 +5,8 @@ import {
   useGetRoomsQuery,
 } from "../../../../Services/accommodationRoomApiSlice";
 import RoomModal from "../Hotels-Resorts/Rooms/RoomFormPage";
+import LoadingSpinner from './../../../LoadingSpinner';
+import ErrorMessage from "./../../../ErrorMessage";
 
 const RoomsTab = ({ accommodation, onViewRoomUnits, onViewCalendar }) => {
   const {
@@ -43,17 +45,13 @@ const RoomsTab = ({ accommodation, onViewRoomUnits, onViewCalendar }) => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <p className="text-gray-500">Loading rooms...</p>
-      </div>
+      <LoadingSpinner fullScreen />
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <p className="text-red-500">Error loading rooms</p>
-      </div>
+      <ErrorMessage message="Failed to load rooms." />
     );
   }
 

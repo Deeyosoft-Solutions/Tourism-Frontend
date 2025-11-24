@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGetPublishedDestinationsQuery } from "../../../Services/destinationApiSlice";
 import LoadingSpinner from "./../../LoadingSpinner";
+import ErrorMessage from "../../ErrorMessage";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -69,9 +70,7 @@ const PopularDestinations = () => {
 
   if (error)
     return (
-      <p className="text-center text-red-500">
-        Failed to load destinations.
-      </p>
+      <ErrorMessage message="Failed to load destinaitons." className="m-4" />
     );
 
   return (
@@ -107,20 +106,19 @@ const PopularDestinations = () => {
         >
           {destinations.map((destination) => {
             // Pick first image, or heroImageUrl, or default
-            const imageUrl =
-              destination.images?.[0]
-                ? `${API_BASE_URL}${destination.images[0]}`
-                : destination.heroImageUrl
-                ? `${API_BASE_URL}${destination.heroImageUrl}`
-                : "/assets/Images/png-logo.png";
+            const imageUrl = destination.images?.[0]
+              ? `${API_BASE_URL}${destination.images[0]}`
+              : destination.heroImageUrl
+              ? `${API_BASE_URL}${destination.heroImageUrl}`
+              : "/assets/Images/png-logo.png";
 
             return (
               <div
                 key={destination.id}
                 onClick={() => handleSlideClick(destination.slug)}
-                className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 flex-shrink-0 p-3 cursor-pointer"
+                className="w-full mx-2 sm:w-1/2 md:w-1/3 lg:w-1/4 flex-shrink-0 rounded-xl shadow-md hover:shadow-lg hover:border hover:border-blue-300 cursor-pointer"
               >
-                <div className="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 flex flex-col">
+                <div className="bg-white border border-gray-200 p-1 rounded-xl overflow-hidden transition-all duration-300 flex flex-col">
                   {/* Image Section */}
                   <div className="w-full h-52">
                     <img
@@ -132,51 +130,9 @@ const PopularDestinations = () => {
 
                   {/* Info Section */}
                   <div className="p-4 flex flex-col justify-between flex-grow">
-                    <div>
-                      <h3 className="text-gray-900 font-semibold text-[16px] truncate mb-1">
-                        {destination.name}
-                      </h3>
-                      <p className="text-gray-600 text-sm flex items-center gap-1 mb-3">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          className="w-4 h-4 text-gray-500"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 2C6.686 2 4 4.686 4 8c0 3.632 3.833 8.415 5.534 10.451a1 1 0 001.532 0C12.167 16.415 16 11.632 16 8c0-3.314-2.686-6-6-6zM8 8a2 2 0 114 0 2 2 0 01-4 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        {destination.location || "Unknown Location"}
-                      </p>
-                    </div>
-
-                    {/* Optional Tags */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {destination.tags?.slice(0, 3)?.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Button */}
-                    <div className="flex justify-end">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSlideClick(destination.slug);
-                        }}
-                        className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg transition"
-                      >
-                        View Details
-                      </button>
-                    </div>
+                    <h3 className="text-slate-700 bg-slate-300 font-semibold text-[16px] px-2 py-1 rounded-md truncate mb-1">
+                      {destination.name}
+                    </h3>
                   </div>
                 </div>
               </div>

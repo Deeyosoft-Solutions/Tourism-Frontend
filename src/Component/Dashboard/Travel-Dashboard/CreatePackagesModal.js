@@ -83,11 +83,30 @@ const CreateTravelPackageModal = ({ isOpen, onClose, onCreate }) => {
     },
   });
 
-  // Cleanup previews
+  // Gallery image handlers
+  const handleGalleryChange = (e) => {
+    const files = Array.from(e.target.files).slice(0, 5);
+    setImagePreviews(files.map((file) => URL.createObjectURL(file)));
+    formik.setFieldValue("images", files);
+  };
+
+  const removeGalleryImage = (index) => {
+    const newImages = [...formik.values.images];
+    const newPreviews = [...imagePreviews];
+
+    URL.revokeObjectURL(newPreviews[index]);
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+
+    formik.setFieldValue("images", newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  // Cleanup previews on unmount
   useEffect(() => {
     return () => {
-      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
       if (coverPreview) URL.revokeObjectURL(coverPreview);
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [coverPreview, imagePreviews]);
 
@@ -110,13 +129,12 @@ const CreateTravelPackageModal = ({ isOpen, onClose, onCreate }) => {
         </div>
 
         <form onSubmit={formik.handleSubmit} className="space-y-4">
-          {/* Images */}
+          {/* Cover Image */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Cover Image
             </label>
             <div className="flex items-center space-x-4">
-              {/* Preview Box */}
               <div className="w-32 h-32 border border-gray-300 rounded-md flex items-center justify-center overflow-hidden bg-gray-100">
                 {coverPreview ? (
                   <img
@@ -128,8 +146,6 @@ const CreateTravelPackageModal = ({ isOpen, onClose, onCreate }) => {
                   <span className="text-gray-400">+</span>
                 )}
               </div>
-
-              {/* Upload Button */}
               <div>
                 <input
                   type="file"
@@ -150,32 +166,34 @@ const CreateTravelPackageModal = ({ isOpen, onClose, onCreate }) => {
                 </label>
               </div>
             </div>
-
-            {formik.touched.coverImage && formik.errors.coverImage && (
-              <div className="text-red-500 text-sm mt-1">
-                {formik.errors.coverImage}
-              </div>
-            )}
           </div>
 
-          {/* Cover & Gallery Images */}
+          {/* Gallery Images */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Gallery Images
             </label>
-
             <div className="grid grid-cols-5 gap-2 mb-2">
               {[...Array(5)].map((_, index) => (
                 <div
                   key={index}
-                  className="w-24 h-24 border border-gray-300 flex items-center justify-center"
+                  className="w-24 h-24 border border-gray-300 flex items-center justify-center relative"
                 >
-                  {formik.values.images[index] ? (
-                    <img
-                      src={URL.createObjectURL(formik.values.images[index])}
-                      alt="Upload preview"
-                      className="w-full h-full object-cover"
-                    />
+                  {imagePreviews[index] ? (
+                    <>
+                      <img
+                        src={imagePreviews[index]}
+                        alt={`Preview ${index}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(index)}
+                        className="absolute top-1 right-1 bg-white rounded-full p-1 text-red-500 hover:bg-gray-200"
+                      >
+                        <FaTimes className="w-3 h-3" />
+                      </button>
+                    </>
                   ) : (
                     <span className="text-gray-400 cursor-pointer">+</span>
                   )}
@@ -186,10 +204,7 @@ const CreateTravelPackageModal = ({ isOpen, onClose, onCreate }) => {
             <input
               type="file"
               multiple
-              onChange={(e) => {
-                const files = Array.from(e.target.files).slice(0, 5);
-                formik.setFieldValue("images", files);
-              }}
+              onChange={handleGalleryChange}
               className="hidden"
               id="image-upload"
               accept="image/*"
@@ -200,11 +215,6 @@ const CreateTravelPackageModal = ({ isOpen, onClose, onCreate }) => {
             >
               Add Images
             </label>
-            {formik.touched.images && formik.errors.images && (
-              <div className="text-red-500 text-sm mt-1">
-                {formik.errors.images}
-              </div>
-            )}
           </div>
 
           {/* Basic Info */}
@@ -316,7 +326,6 @@ const CreateTravelPackageModal = ({ isOpen, onClose, onCreate }) => {
               </button>
             </div>
 
-            {/* Not Included Items */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 What's Not Included

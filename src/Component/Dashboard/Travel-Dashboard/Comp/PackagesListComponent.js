@@ -17,7 +17,7 @@ const PackagesListComponent = ({
   handleDelete,
   handleCreatePackage,
   handleUpdatePackage,
-}) => {
+}) => {   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);

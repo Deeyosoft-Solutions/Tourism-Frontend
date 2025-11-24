@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { FaArrowLeft, FaMapMarkerAlt } from "react-icons/fa";
-import OverviewTab from './Accommodation Details/Overview';
-import RoomsTab from './Accommodation Details/Rooms Tab';
-import BookingsTab from './Accommodation Details/Bookings Tab';
-import SettingsTab from './Accommodation Details/Settings Tab';
-import RoomUnitsTab from './Accommodation Details/Rooms Unit Tab';
+import OverviewTab from "./Accommodation Details/Overview";
+import RoomsTab from "./Accommodation Details/Rooms Tab";
+import BookingsTab from "./Accommodation Details/Bookings Tab";
+import SettingsTab from "./Accommodation Details/Settings Tab";
+import RoomUnitsTab from "./Accommodation Details/Rooms Unit Tab";
 import UnitAllocationTab from "./Accommodation Details/Unit Allocation Tab";
+import { useGetBookingsByAccommodationIdQuery } from "../../../Services/accommodationBooking";
 
 const AccommodationDetailsView = ({ accommodation, onClose }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [viewMode, setViewMode] = useState(null); // 'units' or 'calendar'
+  const [viewMode, setViewMode] = useState(null);
+
+  // Fetch bookings
+  const { data: allBookings } = useGetBookingsByAccommodationIdQuery(accommodation.id);
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -21,7 +25,6 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    // Clear selected room when switching tabs
     if (tabId !== "rooms") {
       setSelectedRoom(null);
       setViewMode(null);
@@ -48,7 +51,6 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
       {/* Header */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-5">
-          {/* Go Back Button */}
           <div className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-3 transition">
             <button
               onClick={onClose}
@@ -58,7 +60,6 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
             </button>
           </div>
 
-          {/* Title and Address */}
           <div>
             <h1 className="text-xl font-semibold text-gray-900">
               {accommodation.name}
@@ -69,7 +70,6 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="mt-6">
             <div className="flex border py-1 border-gray-300 bg-gray-200 gap-2 rounded-md overflow-hidden">
               {tabs.map((tab) => (
@@ -105,7 +105,7 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
               />
             )}
             {activeTab === "bookings" && (
-              <BookingsTab accommodation={accommodation} />
+              <BookingsTab bookings={allBookings} />
             )}
             {activeTab === "settings" && (
               <SettingsTab accommodation={accommodation} />
@@ -117,7 +117,10 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
               <RoomUnitsTab room={selectedRoom} onBack={handleBackToRooms} />
             )}
             {viewMode === "calendar" && (
-              <UnitAllocationTab room={selectedRoom} onBack={handleBackToRooms} />
+              <UnitAllocationTab
+                room={selectedRoom}
+                onBack={handleBackToRooms}
+              />
             )}
           </>
         )}

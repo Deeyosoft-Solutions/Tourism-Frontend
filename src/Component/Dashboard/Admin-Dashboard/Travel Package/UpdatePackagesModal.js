@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import { FaCamera } from "react-icons/fa";
+import { useUpdateTravelPackageMutation } from "../../../../Services/travelPackageApiSlice";
+
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -8,15 +12,19 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
     price: "",
     durationDays: "",
     durationNights: "",
-    imagesUrls: [],
     included: [],
     notIncluded: [],
     destinations: [],
     bookingLeadHours: "",
     defaultDepartureCapacity: "",
-    coverImage: null,
     images: []
   });
+
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImagePreviews, setNewImagePreviews] = useState([]);
+
+  const [updateTravelPackage, { isLoading }] = useUpdateTravelPackageMutation();
+  const [error, setError] = useState("");
 
   // Populate form when packageData changes
   useEffect(() => {
@@ -27,51 +35,149 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
         price: packageData.price || "",
         durationDays: packageData.durationDays || "",
         durationNights: packageData.durationNights || "",
-        imagesUrls: packageData.imagesUrls || [],
         included: packageData.included || [],
         notIncluded: packageData.notIncluded || [],
         destinations: packageData.destinations || [],
         bookingLeadHours: packageData.bookingLeadHours || "",
         defaultDepartureCapacity: packageData.defaultDepartureCapacity || "",
-        coverImage: packageData.coverImage || null,
-        images: packageData.images || []
+        images: []
       });
+
+      // Set existing images
+      if (packageData.images && packageData.images.length > 0) {
+        setExistingImages(packageData.images);
+      } else if (packageData.imagesUrls && packageData.imagesUrls.length > 0) {
+        setExistingImages(packageData.imagesUrls);
+      }
+      
+      setNewImagePreviews([]);
     }
   }, [packageData]);
 
-  const handleSubmit = () => {
-    if (!packageData?.slug) return;
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const totalImages = existingImages.length + formData.images.length + files.length;
+    
+    if (totalImages > 5) {
+      setError("Maximum 5 images allowed");
+      return;
+    }
+
+    // Validate file types
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
+    
+    if (invalidFiles.length > 0) {
+      setError("Only JPEG, PNG, and WebP images are allowed");
+      return;
+    }
+
+    // Create preview URLs for new images
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    
+    setFormData({ ...formData, images: [...formData.images, ...files] });
+    setNewImagePreviews([...newImagePreviews, ...newPreviews]);
+    setError("");
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    const newPreviews = newImagePreviews.filter((_, i) => i !== index);
+    
+    // Revoke the URL to avoid memory leaks
+    URL.revokeObjectURL(newImagePreviews[index]);
+    
+    setFormData({ ...formData, images: newImages });
+    setNewImagePreviews(newPreviews);
+  };
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    setError("");
+
+    if (!packageData?.slug) {
+      setError("Package slug not found");
+      return;
+    }
+
+    // Validation
+    if (!formData.name || !formData.description || !formData.price || !formData.durationDays || !formData.durationNights) {
+      setError("Please fill in all required fields");
+      return;
+    }
 
     try {
-      // Convert string numbers to actual numbers
-      const submitData = {
-        slug: packageData.slug,
-        ...formData,
-        durationDays: formData.durationDays ? Number(formData.durationDays) : undefined,
-        durationNights: formData.durationNights ? Number(formData.durationNights) : undefined,
-        bookingLeadHours: formData.bookingLeadHours ? Number(formData.bookingLeadHours) : undefined,
-        defaultDepartureCapacity: formData.defaultDepartureCapacity ? Number(formData.defaultDepartureCapacity) : undefined,
-      };
-      console.log("Updating:", submitData);
+      // Prepare FormData
+      const submitData = new FormData();
+      
+      // Append basic fields
+      submitData.append('name', formData.name.trim());
+      submitData.append('description', formData.description.trim());
+      submitData.append('price', formData.price);
+      submitData.append('durationDays', Number(formData.durationDays));
+      submitData.append('durationNights', Number(formData.durationNights));
+      
+      // Append optional fields
+      if (formData.bookingLeadHours) {
+        submitData.append('bookingLeadHours', Number(formData.bookingLeadHours));
+      }
+      if (formData.defaultDepartureCapacity) {
+        submitData.append('defaultDepartureCapacity', Number(formData.defaultDepartureCapacity));
+      }
+      
+      // Append arrays as JSON strings
+      if (formData.included.length > 0) {
+        submitData.append('included', JSON.stringify(formData.included));
+      }
+      if (formData.notIncluded.length > 0) {
+        submitData.append('notIncluded', JSON.stringify(formData.notIncluded));
+      }
+      if (formData.destinations.length > 0) {
+        submitData.append('destinations', JSON.stringify(formData.destinations));
+      }
+      
+      // Append existing images that weren't removed
+      if (existingImages.length > 0) {
+        submitData.append('existingImages', JSON.stringify(existingImages));
+      }
+      
+      // Append new images
+      formData.images.forEach((image) => {
+        submitData.append('images', image);
+      });
+
+      await updateTravelPackage({ 
+        slug: packageData.slug, 
+        data: submitData 
+      }).unwrap();
+      
+      // Cleanup preview URLs
+      newImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      
       onSuccess();
       onClose();
     } catch (err) {
       console.error("Failed to update package:", err);
+      setError(err?.data?.message || err?.message || "Failed to update package");
     }
   };
 
-  const handleArrayInput = (field, value) => {
-    setFormData({
-      ...formData,
-      [field]: value.split(",").map((v) => v.trim()).filter(v => v)
-    });
-  };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const urls = files.map((file) => URL.createObjectURL(file));
-    setFormData({ ...formData, images: files, imagesUrls: [...formData.imagesUrls, ...urls].slice(0, 5) });
-  };
+  const allImages = [
+    ...existingImages.map((url, idx) => ({ 
+      url: url.startsWith('http') ? url : `${API_BASE_URL}${url}`, 
+      type: 'existing', 
+      index: idx 
+    })),
+    ...newImagePreviews.map((url, idx) => ({ 
+      url, 
+      type: 'new', 
+      index: idx 
+    }))
+  ];
 
   if (!isOpen) return null;
 
@@ -86,30 +192,63 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-xl"
+            disabled={isLoading}
           >
             ✕
           </button>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm flex justify-between items-start">
+            <span>{error}</span>
+            <button 
+              onClick={() => setError("")}
+              className="text-red-700 hover:text-red-900 ml-2"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
           <div className="space-y-4">
             {/* Image Section */}
             <div>
+              <label className="block text-xs text-gray-600 mb-2">
+                Package Images (Max 5) - {allImages.length}/5
+              </label>
               <div className="grid grid-cols-5 gap-3 mb-3">
                 {[...Array(5)].map((_, index) => (
                   <div
                     key={index}
-                    className="aspect-square border border-gray-200 bg-gray-50 rounded flex items-center justify-center overflow-hidden"
+                    className="aspect-square border border-gray-200 bg-gray-50 rounded flex items-center justify-center overflow-hidden relative"
                   >
-                    {formData.imagesUrls[index] ? (
-                      <img
-                        src={formData.imagesUrls[index]}
-                        alt={`Preview ${index}`}
-                        className="w-full h-full object-cover"
-                      />
+                    {allImages[index] ? (
+                      <>
+                        <img
+                          src={allImages[index].url}
+                          alt={`Preview ${index}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (allImages[index].type === 'existing') {
+                              removeExistingImage(allImages[index].index);
+                            } else {
+                              removeNewImage(allImages[index].index);
+                            }
+                          }}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                          disabled={isLoading}
+                        >
+                          ×
+                        </button>
+                      </>
                     ) : (
-                      <span className="text-gray-300 text-2xl">📷</span>
+                      <span className="text-gray-300 text-2xl"><FaCamera /></span>
                     )}
                   </div>
                 ))}
@@ -118,25 +257,31 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
               <input
                 type="file"
                 multiple
-                onChange={handleImageUpload}
+                onChange={handleImageChange}
                 className="hidden"
                 id="image-upload-update"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                disabled={isLoading || allImages.length >= 5}
               />
 
               <label
                 htmlFor="image-upload-update"
-                className="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 block text-center"
+                className={`cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 block text-center ${
+                  isLoading || allImages.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
-                Add Images
+                {allImages.length >= 5 ? 'Maximum images reached' : 'Add Images'}
               </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Accepted formats: JPEG, PNG, WebP (Max 5 images)
+              </p>
             </div>
 
             {/* Two Column Layout */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Package Name
+                  Package Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -147,12 +292,13 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Price per person
+                  Price per person <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -163,6 +309,7 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -170,7 +317,7 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
             {/* Description */}
             <div>
               <label className="block text-xs text-gray-600 mb-1">
-                Description
+                Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 placeholder="Brief overview"
@@ -181,6 +328,7 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                 rows={2}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -188,7 +336,7 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Duration Days
+                  Duration Days <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -199,12 +347,13 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Duration Nights
+                  Duration Nights <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -215,6 +364,7 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -233,6 +383,7 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                     setFormData({ ...formData, bookingLeadHours: e.target.value })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Minimum hours before departures to allow booking
@@ -251,6 +402,7 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
                     setFormData({ ...formData, defaultDepartureCapacity: e.target.value })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Default capacity for new departures
@@ -263,13 +415,43 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
               <label className="block text-xs text-gray-600 mb-1">
                 Whats Included
               </label>
-              <input
-                type="text"
-                placeholder="Accomodation, Breakfast"
-                value={formData.included.join(", ")}
-                onChange={(e) => handleArrayInput("included", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
-              />
+              <div className="space-y-2">
+                {formData.included.map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g., Accommodation"
+                      value={item}
+                      onChange={(e) => {
+                        const newIncluded = [...formData.included];
+                        newIncluded[index] = e.target.value;
+                        setFormData({ ...formData, included: newIncluded });
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newIncluded = formData.included.filter((_, i) => i !== index);
+                        setFormData({ ...formData, included: newIncluded });
+                      }}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, included: [...formData.included, ''] })}
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                  disabled={isLoading}
+                >
+                  + Add Item
+                </button>
+              </div>
             </div>
 
             {/* What's Not Included */}
@@ -277,13 +459,43 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
               <label className="block text-xs text-gray-600 mb-1">
                 Whats Not Included
               </label>
-              <input
-                type="text"
-                placeholder="Flights, Personal Expense"
-                value={formData.notIncluded.join(", ")}
-                onChange={(e) => handleArrayInput("notIncluded", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
-              />
+              <div className="space-y-2">
+                {formData.notIncluded.map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g., Flights"
+                      value={item}
+                      onChange={(e) => {
+                        const newNotIncluded = [...formData.notIncluded];
+                        newNotIncluded[index] = e.target.value;
+                        setFormData({ ...formData, notIncluded: newNotIncluded });
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newNotIncluded = formData.notIncluded.filter((_, i) => i !== index);
+                        setFormData({ ...formData, notIncluded: newNotIncluded });
+                      }}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, notIncluded: [...formData.notIncluded, ''] })}
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                  disabled={isLoading}
+                >
+                  + Add Item
+                </button>
+              </div>
             </div>
 
             {/* Destinations */}
@@ -291,13 +503,43 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
               <label className="block text-xs text-gray-600 mb-1">
                 Destinations
               </label>
-              <input
-                type="text"
-                placeholder="pokhara, chitwan (comma separated IDs or slugs)"
-                value={formData.destinations.join(", ")}
-                onChange={(e) => handleArrayInput("destinations", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
-              />
+              <div className="space-y-2">
+                {formData.destinations.map((dest, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g., pokhara (ID or slug)"
+                      value={dest}
+                      onChange={(e) => {
+                        const newDestinations = [...formData.destinations];
+                        newDestinations[index] = e.target.value;
+                        setFormData({ ...formData, destinations: newDestinations });
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newDestinations = formData.destinations.filter((_, i) => i !== index);
+                        setFormData({ ...formData, destinations: newDestinations });
+                      }}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, destinations: [...formData.destinations, ''] })}
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                  disabled={isLoading}
+                >
+                  + Add Destination
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -307,14 +549,16 @@ const UpdatePackageModal = ({ isOpen, onClose, packageData, onSuccess }) => {
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+            disabled={isLoading}
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-6 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+            className="px-6 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
-            Update Package
+            {isLoading ? "Updating..." : "Update Package"}
           </button>
         </div>
       </div>

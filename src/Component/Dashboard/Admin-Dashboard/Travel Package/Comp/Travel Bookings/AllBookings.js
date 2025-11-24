@@ -2,13 +2,13 @@ import { useState, useMemo } from "react";
 import { Eye } from "lucide-react";
 
 import BookingDetailsView from "./BookingDetailsView";
-import { useGetBookingsQuery } from "../../../../../../Services/accommodationBooking";
+import { useGetTravelBookingsQuery } from "../../../../../../Services/travelBookings";
 import LoadingSpinner from "../../../../../LoadingSpinner";
 import ErrorMessage from "../../../../../ErrorMessage";
 import { FaCalendarAlt } from "react-icons/fa";
 
 const AllTravelBookings = () => {
-  const { data, isLoading, isError, error, refetch } = useGetBookingsQuery();
+  const { data, isLoading, isError, error, refetch } = useGetTravelBookingsQuery();
   const bookings = useMemo(() => data?.data || [], [data]);
 
   const [filters, setFilters] = useState({

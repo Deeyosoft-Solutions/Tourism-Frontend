@@ -5,6 +5,7 @@ import ImageCarousel from "../WhereToStay/ImageCarousel";
 import PaginationControls from "../../PaginationControls";
 import { useGetTravelPackagesQuery } from "../../../Services/travelPackageApiSlice";
 import LoadingSpinner from "../../LoadingSpinner";
+import ErrorMessage from './../../ErrorMessage';
 
 const Travels = () => {
   const [sort, setSort] = useState("recommended");
@@ -104,7 +105,7 @@ const Travels = () => {
   const gridColumnsClass = "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
   if (isLoading) return <LoadingSpinner fullScreen={true} size="medium" />;
-  if (error) return <div>Error loading travel packages</div>;
+  if (error) return <ErrorMessage message="Failed to load travel packages." className="m-4" />;
 
   return (
     <div className="flex flex-col md:mx-24 md:flex-row py-2 px-4">

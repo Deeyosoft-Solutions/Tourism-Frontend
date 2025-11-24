@@ -6,12 +6,16 @@ import BookingsTab from './Accommodation Details/Bookings Tab';
 import SettingsTab from './Accommodation Details/Settings Tab';
 import RoomUnitsTab from './Accommodation Details/Rooms Unit Tab';
 import UnitAllocationTab from "./Accommodation Details/Unit Allocation Tab";
+import { useGetBookingsByAccommodationIdQuery } from "../../../../Services/accommodationBooking";
 
 const AccommodationDetailsView = ({ accommodation, onClose }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [viewMode, setViewMode] = useState(null); // 'units' or 'calendar'
 
+  // Fetch bookings
+    const { data: allBookings } = useGetBookingsByAccommodationIdQuery(accommodation.id);
+  
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "rooms", label: `Rooms (${accommodation.rooms?.length || 0})` },
@@ -105,7 +109,7 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
               />
             )}
             {activeTab === "bookings" && (
-              <BookingsTab accommodation={accommodation} />
+              <BookingsTab accommodation={allBookings} />
             )}
             {activeTab === "settings" && (
               <SettingsTab accommodation={accommodation} />

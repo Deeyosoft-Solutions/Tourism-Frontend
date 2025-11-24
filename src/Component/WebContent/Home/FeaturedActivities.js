@@ -78,7 +78,7 @@ const FeaturedActivities = () => {
 
           {/* Welcome Text */}
           <div className="col-span-4 flex items-center justify-center text-center p-2">
-            <span className="text-orange-500 text-3xl lg:text-4xl xl:text-5xl font-medium font-allura">
+            <span className="text-yellow-500 text-3xl lg:text-4xl xl:text-5xl font-medium font-Open">
               Welcome to{" "}
               <span className="text-red-600 italic text-3xl lg:text-4xl xl:text-5xl font-medium font-allura">
                 Panchpokhari
@@ -132,7 +132,7 @@ const FeaturedActivities = () => {
 
           {/* Welcome Text */}
           <div className="col-span-4 flex items-center justify-center text-center p-2">
-            <span className="text-orange-500 text-3xl font-medium font-allura">
+            <span className="text-orange-500 text-3xl font-medium font-Open">
               Welcome to{" "}
               <span className="text-red-600 italic text-3xl font-medium font-allura">
                 Panchpokhari

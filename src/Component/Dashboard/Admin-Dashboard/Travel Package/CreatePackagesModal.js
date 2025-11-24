@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
 import { FaCamera } from "react-icons/fa";
+import { useCreateTravelPackageMutation } from "../../../../Services/travelPackageApiSlice";
 
 const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -9,45 +10,161 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
     price: "",
     durationDays: "",
     durationNights: "",
-    imagesUrls: [],
     included: [],
     notIncluded: [],
     destinations: [],
     bookingLeadHours: "",
     defaultDepartureCapacity: "",
-    coverImage: null,
-    images: []
+    coverImage: null, // ✅ ADDED
+    images: [],
   });
 
-  const handleSubmit = () => {
+  const [coverPreview, setCoverPreview] = useState(null); // ✅ ADDED
+  const [imagePreviews, setImagePreviews] = useState([]);
+
+  const [createTravelPackage, { isLoading }] = useCreateTravelPackageMutation();
+  const [error, setError] = useState("");
+
+  const handleCoverChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setError("Only JPEG, PNG, and WebP images are allowed");
+      return;
+    }
+
+    setFormData({ ...formData, coverImage: file });
+    setCoverPreview(URL.createObjectURL(file));
+    setError("");
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files).slice(0, 5);
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const invalidFiles = files.filter(
+      (file) => !validTypes.includes(file.type)
+    );
+
+    if (invalidFiles.length > 0) {
+      setError("Only JPEG, PNG, and WebP images are allowed");
+      return;
+    }
+
+    const previews = files.map((file) => URL.createObjectURL(file));
+
+    setFormData({ ...formData, images: files });
+    setImagePreviews(previews);
+    setError("");
+  };
+
+  const removeImage = (index) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+
+    URL.revokeObjectURL(imagePreviews[index]);
+
+    setFormData({ ...formData, images: newImages });
+    setImagePreviews(newPreviews);
+  };
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    setError("");
+
+    if (
+      !formData.name ||
+      !formData.description ||
+      !formData.price ||
+      !formData.durationDays ||
+      !formData.durationNights
+    ) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
     try {
-      // Convert string numbers to actual numbers
-      const submitData = {
-        ...formData,
-        durationDays: formData.durationDays ? Number(formData.durationDays) : undefined,
-        durationNights: formData.durationNights ? Number(formData.durationNights) : undefined,
-        bookingLeadHours: formData.bookingLeadHours ? Number(formData.bookingLeadHours) : undefined,
-        defaultDepartureCapacity: formData.defaultDepartureCapacity ? Number(formData.defaultDepartureCapacity) : undefined,
-      };
-      console.log("Submitting:", submitData);
+      const submitData = new FormData();
+
+      // Basic fields
+      submitData.append("name", formData.name.trim());
+      submitData.append("description", formData.description.trim());
+      submitData.append("price", formData.price);
+      submitData.append("durationDays", Number(formData.durationDays));
+      submitData.append("durationNights", Number(formData.durationNights));
+
+      if (formData.bookingLeadHours)
+        submitData.append(
+          "bookingLeadHours",
+          Number(formData.bookingLeadHours)
+        );
+
+      if (formData.defaultDepartureCapacity)
+        submitData.append(
+          "defaultDepartureCapacity",
+          Number(formData.defaultDepartureCapacity)
+        );
+
+      // Arrays
+      formData.included.forEach((item) => submitData.append("included", item));
+
+      formData.notIncluded.forEach((item) =>
+        submitData.append("notIncluded", item)
+      );
+
+      formData.destinations.forEach((dest) =>
+        submitData.append("destinations", dest)
+      );
+
+      // COVER IMAGE
+      submitData.append("coverImage", formData.coverImage);
+
+      // MULTIPLE IMAGES
+      formData.images.forEach((img) => {
+        submitData.append("images", img);
+      });
+
+      // DEBUG
+      console.log("\n==== FORM SUBMIT ====");
+      for (let pair of submitData.entries()) {
+        console.log(pair[0], ":", pair[1]);
+      }
+
+      await createTravelPackage(submitData).unwrap();
+
+      // Cleanup
+      if (coverPreview) URL.revokeObjectURL(coverPreview);
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+
+      // Reset form
+      setFormData({
+        name: "",
+        description: "",
+        price: "",
+        durationDays: "",
+        durationNights: "",
+        included: [],
+        notIncluded: [],
+        destinations: [],
+        bookingLeadHours: "",
+        defaultDepartureCapacity: "",
+        coverImage: null,
+        images: [],
+      });
+
+      setCoverPreview(null);
+      setImagePreviews([]);
+
       onSuccess();
       onClose();
     } catch (err) {
       console.error("Failed to create package:", err);
+      setError(
+        err?.data?.message || err?.message || "Failed to create package"
+      );
     }
-  };
-
-  const handleArrayInput = (field, value) => {
-    setFormData({
-      ...formData,
-      [field]: value.split(",").map((v) => v.trim()).filter(v => v)
-    });
-  };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const urls = files.map((file) => URL.createObjectURL(file));
-    setFormData({ ...formData, images: files, imagesUrls: urls });
   };
 
   if (!isOpen) return null;
@@ -63,30 +180,96 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-xl"
+            disabled={isLoading}
           >
             ✕
           </button>
         </div>
 
-        {/* Content */}
+        {/* Error */}
+        {error && (
+          <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm flex justify-between items-start">
+            <span>{error}</span>
+            <button
+              onClick={() => setError("")}
+              className="text-red-700 hover:text-red-900 ml-2"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* CONTENT */}
         <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
           <div className="space-y-4">
-            {/* Image Section */}
+            {/* COVER IMAGE UPLOAD */}
             <div>
+              <label className="block text-xs text-gray-600 mb-2">
+                Cover Image
+              </label>
+
+              <div className="w-full h-40 border border-gray-300 rounded flex items-center justify-center overflow-hidden bg-gray-50 relative">
+                {coverPreview ? (
+                  <img
+                    src={coverPreview}
+                    alt="Cover"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-400 text-3xl">
+                    <FaCamera />
+                  </span>
+                )}
+              </div>
+
+              <input
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleCoverChange}
+                className="hidden"
+                id="cover-upload"
+                disabled={isLoading}
+              />
+
+              <label
+                htmlFor="cover-upload"
+                className="cursor-pointer mt-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 block text-center"
+              >
+                Upload Cover Image
+              </label>
+            </div>
+
+            {/* MULTIPLE IMAGES */}
+            <div>
+              <label className="block text-xs text-gray-600 mb-2">
+                Package Images (Max 5) - Optional
+              </label>
+
               <div className="grid grid-cols-5 gap-3 mb-3">
                 {[...Array(5)].map((_, index) => (
                   <div
                     key={index}
-                    className="aspect-square border border-gray-200 bg-gray-50 rounded flex items-center justify-center overflow-hidden"
+                    className="aspect-square border border-gray-200 bg-gray-50 rounded flex items-center justify-center overflow-hidden relative"
                   >
-                    {formData.imagesUrls[index] ? (
-                      <img
-                        src={formData.imagesUrls[index]}
-                        alt={`Preview ${index}`}
-                        className="w-full h-full object-cover"
-                      />
+                    {imagePreviews[index] ? (
+                      <>
+                        <img
+                          src={imagePreviews[index]}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                      </>
                     ) : (
-                      <span className="text-gray-300 text-2xl"><FaCamera /></span>
+                      <span className="text-gray-300 text-2xl">
+                        <FaCamera />
+                      </span>
                     )}
                   </div>
                 ))}
@@ -95,17 +278,20 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
               <input
                 type="file"
                 multiple
-                onChange={handleImageUpload}
+                onChange={handleImageChange}
                 className="hidden"
                 id="image-upload"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                disabled={isLoading}
               />
 
               <label
                 htmlFor="image-upload"
                 className="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 block text-center"
               >
-                Add Images
+                {formData.images.length >= 5
+                  ? "Maximum images reached"
+                  : "Add Images"}
               </label>
             </div>
 
@@ -113,7 +299,7 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Package Name
+                  Package Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -124,12 +310,13 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Price per person
+                  Price per person <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -140,6 +327,7 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -147,7 +335,7 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
             {/* Description */}
             <div>
               <label className="block text-xs text-gray-600 mb-1">
-                Description
+                Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 placeholder="Brief overview"
@@ -158,6 +346,7 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                 rows={2}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -165,7 +354,7 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Duration Days
+                  Duration Days <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -176,12 +365,13 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Duration Nights
+                  Duration Nights <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -192,6 +382,7 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -207,9 +398,13 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
                   placeholder="24"
                   value={formData.bookingLeadHours}
                   onChange={(e) =>
-                    setFormData({ ...formData, bookingLeadHours: e.target.value })
+                    setFormData({
+                      ...formData,
+                      bookingLeadHours: e.target.value,
+                    })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Minimum hours before departures to allow booking
@@ -225,9 +420,13 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
                   placeholder="10"
                   value={formData.defaultDepartureCapacity}
                   onChange={(e) =>
-                    setFormData({ ...formData, defaultDepartureCapacity: e.target.value })
+                    setFormData({
+                      ...formData,
+                      defaultDepartureCapacity: e.target.value,
+                    })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Default capacity for new departures
@@ -240,13 +439,50 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
               <label className="block text-xs text-gray-600 mb-1">
                 Whats Included
               </label>
-              <input
-                type="text"
-                placeholder="Accomodation, Breakfast"
-                value={formData.included.join(", ")}
-                onChange={(e) => handleArrayInput("included", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
-              />
+              <div className="space-y-2">
+                {formData.included.map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g., Accommodation"
+                      value={item}
+                      onChange={(e) => {
+                        const newIncluded = [...formData.included];
+                        newIncluded[index] = e.target.value;
+                        setFormData({ ...formData, included: newIncluded });
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newIncluded = formData.included.filter(
+                          (_, i) => i !== index
+                        );
+                        setFormData({ ...formData, included: newIncluded });
+                      }}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      included: [...formData.included, ""],
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                  disabled={isLoading}
+                >
+                  + Add Item
+                </button>
+              </div>
             </div>
 
             {/* What's Not Included */}
@@ -254,13 +490,56 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
               <label className="block text-xs text-gray-600 mb-1">
                 Whats Not Included
               </label>
-              <input
-                type="text"
-                placeholder="Flights, Personal Expense"
-                value={formData.notIncluded.join(", ")}
-                onChange={(e) => handleArrayInput("notIncluded", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
-              />
+              <div className="space-y-2">
+                {formData.notIncluded.map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g., Flights"
+                      value={item}
+                      onChange={(e) => {
+                        const newNotIncluded = [...formData.notIncluded];
+                        newNotIncluded[index] = e.target.value;
+                        setFormData({
+                          ...formData,
+                          notIncluded: newNotIncluded,
+                        });
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newNotIncluded = formData.notIncluded.filter(
+                          (_, i) => i !== index
+                        );
+                        setFormData({
+                          ...formData,
+                          notIncluded: newNotIncluded,
+                        });
+                      }}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      notIncluded: [...formData.notIncluded, ""],
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                  disabled={isLoading}
+                >
+                  + Add Item
+                </button>
+              </div>
             </div>
 
             {/* Destinations */}
@@ -268,13 +547,56 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
               <label className="block text-xs text-gray-600 mb-1">
                 Destinations
               </label>
-              <input
-                type="text"
-                placeholder="pokhara, chitwan (comma separated IDs or slugs)"
-                value={formData.destinations.join(", ")}
-                onChange={(e) => handleArrayInput("destinations", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
-              />
+              <div className="space-y-2">
+                {formData.destinations.map((dest, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g., pokhara (ID or slug)"
+                      value={dest}
+                      onChange={(e) => {
+                        const newDestinations = [...formData.destinations];
+                        newDestinations[index] = e.target.value;
+                        setFormData({
+                          ...formData,
+                          destinations: newDestinations,
+                        });
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-gray-400"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newDestinations = formData.destinations.filter(
+                          (_, i) => i !== index
+                        );
+                        setFormData({
+                          ...formData,
+                          destinations: newDestinations,
+                        });
+                      }}
+                      className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      destinations: [...formData.destinations, ""],
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                  disabled={isLoading}
+                >
+                  + Add Destination
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -283,9 +605,10 @@ const CreatePackageModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="px-6 py-4 border-t flex justify-end">
           <button
             onClick={handleSubmit}
-            className="px-6 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+            className="px-6 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
-            List Package
+            {isLoading ? "Creating..." : "List Package"}
           </button>
         </div>
       </div>

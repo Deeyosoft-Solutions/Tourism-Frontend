@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "./../../LoadingSpinner";
 import { useGetAccommodationsQuery } from "../../../Services/accomodationApiSlice";
+import ErrorMessage from "../../ErrorMessage";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -64,7 +65,7 @@ const FeaturedAccomodations = () => {
 
   if (error)
     return (
-      <p className="text-center text-red-500">Failed to load accommodations.</p>
+       <ErrorMessage message="Failed to load accomodation." className="m-4" />
     );
 
   return (
@@ -107,10 +108,10 @@ const FeaturedAccomodations = () => {
             return (
               <div
                 key={stay.id}
-                className="w-full flex-shrink-0 sm:w-1/2 md:w-1/3 lg:w-1/4 p-3 cursor-pointer"
+                className="w-full mx-2 flex-shrink-0 sm:w-1/2 md:w-1/3 lg:w-1/4 rounded-xl shadow-md hover:shadow-lg hover:border hover:border-blue-300 cursor-pointer"
                 onClick={() => handleStayClick(stay.slug)}
               >
-                <div className="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 flex flex-col h-full">
+                <div className="bg-white border border-gray-200 p-1 rounded-xl shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 flex flex-col h-full">
                   {/* Image Section */}
                   <div className="w-full h-52 relative">
                     <img
@@ -124,17 +125,14 @@ const FeaturedAccomodations = () => {
                   </div>
 
                   {/* Info Section */}
-                  <div className="p-4 flex flex-col justify-between flex-1 min-h-[140px]">
+                  <div className="p-4 flex flex-col">
                     <h3 className="text-gray-900 font-semibold text-[16px] truncate mb-1">
                       {stay.name}
                     </h3>
-                    <p className="text-gray-600 text-sm mb-2">{stay.address}</p>
-                    <p className="font-bold text-[15px] mb-1">
+                    <p className="text-gray-600 text-sm mb-1">{stay.address}</p>
+                    <p className="font-bold text-[15px] text-red-600 mb-1">
                       {stay.fromPrice ? `NRS ${stay.fromPrice.toFixed(2)}` : "Price N/A"}{" "}
-                      <span className="text-[14px] font-medium">/ night</span>
-                    </p>
-                    <p className="text-gray-600 text-xs mt-1">
-                      {stay.contactNote || "-"}
+                      <span className="text-[14px] text-black font-medium">/ night</span>
                     </p>
                   </div>
                 </div>

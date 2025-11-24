@@ -9,10 +9,10 @@ export const roomUnitsApi = createApi({
     // 🔹 Get all units for a specific room
     getRoomUnits: builder.query({
       query: (roomId) => `/rooms/${roomId}/units`,
-      providesTags: (result, error, roomId) =>
-        result
+      providesTags: (result) =>
+        Array.isArray(result)
           ? [
-              ...result.data.map(({ id }) => ({ type: "RoomUnits", id })),
+              ...result.map((item) => ({ type: "RoomUnits", id: item.id })),
               { type: "RoomUnits", id: "LIST" },
             ]
           : [{ type: "RoomUnits", id: "LIST" }],

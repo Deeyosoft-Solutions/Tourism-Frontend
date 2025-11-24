@@ -7,6 +7,7 @@ import ProductCard from "./../Product/ProductCardDisplay";
 import { useGetCategoriesQuery } from "../../../Services/categoryApiSlice";
 import { useGetProductsQuery } from "../../../Services/productApiSlice";
 import LoadingSpinner from "../../LoadingSpinner";
+import ErrorMessage from "../../ErrorMessage";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -24,7 +25,6 @@ const LocalProductPage = () => {
     data: categoriesData,
     isLoading: categoriesLoading,
     isError: categoriesError,
-    error: categoriesErrorData,
   } = useGetCategoriesQuery();
 
   // Fetch products with pagination
@@ -32,7 +32,6 @@ const LocalProductPage = () => {
     data: productsData = { data: [], totalProducts: 0 },
     isLoading: productsLoading,
     isError: productsError,
-    error: productsErrorData,
   } = useGetProductsQuery({
     page: currentPage,
     limit: productsPerPage,
@@ -87,9 +86,11 @@ const LocalProductPage = () => {
 
   if (categoriesLoading || productsLoading) return <LoadingSpinner />;
   if (categoriesError)
-    return <div>Error loading categories: {categoriesErrorData.message}</div>;
+    return (
+      <ErrorMessage message="Failed to load categories." className="m-4" />
+    );
   if (productsError)
-    return <div>Error loading products: {productsErrorData.message}</div>;
+    return <ErrorMessage message="Failed to load products." className="m-4" />;
 
   return (
     <div className="p-4 xl:mx-44 lg:mx-32 md:mx-20 mx-2">

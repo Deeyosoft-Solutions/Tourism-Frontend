@@ -6,10 +6,10 @@ export const travelBookingsApi = createApi({
   reducerPath: "travelBookingsApi",
   baseQuery,
   endpoints: (builder) => ({
-    getBookings: builder.query({
+    getTravelBookings: builder.query({
       query: () => "/bookings",
     }),
   }),
 });
 
-export const { useGetBookingsQuery } = travelBookingsApi;
+export const { useGetTravelBookingsQuery } = travelBookingsApi;

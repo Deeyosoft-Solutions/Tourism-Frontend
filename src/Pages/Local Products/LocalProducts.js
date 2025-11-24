@@ -1,4 +1,3 @@
-import React from "react";
 import LocalProductPage from './../../Component/WebContent/LocalProducts/ProductsAndCategories';
 
 const LocalProducts = () => {

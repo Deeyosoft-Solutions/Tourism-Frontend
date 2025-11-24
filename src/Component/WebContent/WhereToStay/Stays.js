@@ -5,9 +5,10 @@ import FilterComponent from "./FilterStays";
 import ErrorMessage from "../../ErrorMessage";
 import LoadingSpinner from "../../LoadingSpinner";
 import { useGetAccommodationsQuery } from "../../../Services/accomodationApiSlice";
+import { useGetAccomodationCategoriesQuery } from "../../../Services/accomodationCategoryApiSlice";
 
 const Stays = () => {
-  const [sort, setSort] = useState("recommended");
+  const [sort] = useState();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(4);
   const [filters, setFilters] = useState({
@@ -32,8 +33,20 @@ const Stays = () => {
   // ✅ Fetch accommodations from API
   const { data, isLoading, error } = useGetAccommodationsQuery();
 
+  // ✅ Fetch categories from API
+  const {
+    data: categoriesData,
+    isLoading: isLoadingCategories,
+    error: categoriesError,
+  } = useGetAccomodationCategoriesQuery();
+
   // ✅ Safely extract stays array from API response
   const stays = Array.isArray(data?.data) ? data.data : [];
+
+  // ✅ Safely extract categories array from API response
+  const categories = Array.isArray(categoriesData?.data)
+    ? categoriesData.data
+    : [];
 
   // ✅ Apply filters
   const filteredStays = stays.filter((stay) => {
@@ -41,11 +54,11 @@ const Stays = () => {
 
     if (filters.q) {
       match =
-        match && stay.name?.toLowerCase().includes(filters.q.toLowerCase());
+        match && stay.name?.toLowerCase().startsWith(filters.q.toLowerCase());
     }
 
     if (filters.type) {
-      match = match && stay.type === filters.type;
+      match = match && stay.categoryId === filters.type;
     }
 
     if (filters.minPrice) {
@@ -56,17 +69,31 @@ const Stays = () => {
       match = match && (stay.fromPrice || 0) <= Number(filters.maxPrice);
     }
 
+    if (filters.guests) {
+      match = match && (stay.guests || 0) >= Number(filters.guests);
+    }
+
+    if (filters.amenities) {
+      match && stay.amenities?.toLowerCase().startsWith(filters.amenities.toLowerCase);
+    }
+
     return match;
   });
 
   // ✅ Sorting logic
   const handleSort = (items) => {
     if (!Array.isArray(items)) return [];
-    if (sort === "price-low-high") {
+
+    if (sortBy === "price-asc" || sort === "price-low-high") {
       return [...items].sort((a, b) => (a.fromPrice || 0) - (b.fromPrice || 0));
-    } else if (sort === "price-high-low") {
+    } else if (sortBy === "price-desc" || sort === "price-high-low") {
       return [...items].sort((a, b) => (b.fromPrice || 0) - (a.fromPrice || 0));
+    } else if (sortBy === "newest") {
+      return [...items].sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+      );
     }
+
     return items;
   };
 
@@ -105,8 +132,7 @@ const Stays = () => {
     navigate(`/wheretostay/accomodation/${slug}`);
   };
 
-  const gridColumnsClass =
-    "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+  const gridColumnsClass = "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
   // ✅ Loading & Error handling
   if (isLoading) return <LoadingSpinner fullScreen={true} size="medium" />;
@@ -118,26 +144,23 @@ const Stays = () => {
   return (
     <div className="flex flex-col md:mx-24 md:flex-row py-2 px-4">
       <div className="w-full">
-        {/* Filter Component */}
+        {/* Filter Component - Now with categories */}
         <FilterComponent
           filters={filters}
           setFilters={setFilters}
           sortBy={sortBy}
           setSortBy={setSortBy}
+          categories={categories}
+          isLoadingCategories={isLoadingCategories}
         />
 
-        {/* Sort Controls */}
-        <div className="flex justify-end mb-4">
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="border rounded p-2 text-sm"
-          >
-            <option value="recommended">Recommended</option>
-            <option value="price-low-high">Price: Low to High</option>
-            <option value="price-high-low">Price: High to Low</option>
-          </select>
-        </div>
+        {/* ✅ Display categories error if exists */}
+        {categoriesError && (
+          <ErrorMessage
+            message="Failed to load property types."
+            className="mb-4"
+          />
+        )}
 
         {/* ✅ Stays Grid */}
         <div className={`grid gap-4 ${gridColumnsClass}`}>
@@ -204,22 +227,10 @@ const Stays = () => {
                   <span>🛁 {stay.baths || "1"} baths</span>
                 </div>
 
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {["Kathmandu", "City", stay.type || "Villa"].map((tag, i) => (
-                    <span
-                      key={i}
-                      className="bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1 rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
                 {/* Price & Button */}
                 <div className="flex items-center justify-between">
                   <p className="text-red-500 font-bold text-lg">
-                    ${stay.fromPrice?.toLocaleString() || "1,299.00"}{" "}
+                    Rs.{stay.fromPrice?.toLocaleString() || "1,299.00"}{" "}
                     <span className="text-gray-600 text-sm font-normal">
                       per Night
                     </span>
@@ -235,6 +246,37 @@ const Stays = () => {
             </div>
           ))}
         </div>
+
+        {/* ✅ No results message */}
+        {displayedStays.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">
+              No stays found matching your filters.
+            </p>
+            <button
+              onClick={() =>
+                setFilters({
+                  q: "",
+                  type: "",
+                  minPrice: "",
+                  maxPrice: "",
+                  guests: "",
+                  amenities: "",
+                  destinations: "",
+                  destinationSlug: "",
+                  withinKm: "",
+                  from: "",
+                  to: "",
+                  published: "yes",
+                  status: "",
+                })
+              }
+              className="mt-4 text-blue-600 hover:underline"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
 
         {/* ✅ Pagination */}
         {totalPages > 1 && (

@@ -47,6 +47,7 @@ const PackagesListComponent = ({
           message: "Package deleted successfully!",
           type: "success",
         });
+        refetch();
       } catch (err) {
         setNotification({
           show: true,
