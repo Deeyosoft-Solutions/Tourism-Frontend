@@ -3,7 +3,7 @@ import Layout from './../Component/Main/Layout';
 import WebContentRoute from './webContentRoute';
 import ProtectedRoute from "./ProtectedRoute";
 import DashboardHome from "../Pages/Dashboard/DashboardHome";
-import SiteSettings from "../Pages/Dashboard/Settings/SiteSettings";
+import SiteSettings from "../Pages/Dashboard/Site-Settings/SiteSettings";
 import NoPage from './../NoPage';
 import Category from "../Pages/Dashboard/Category/Category";
 import Product from "../Pages/Dashboard/Products/Product";

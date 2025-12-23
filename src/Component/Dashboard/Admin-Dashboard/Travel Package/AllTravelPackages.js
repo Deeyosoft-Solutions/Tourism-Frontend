@@ -18,7 +18,7 @@ const TravelPackagesDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  const view = query.get("view") || "travel overview";
+  const view = query.get("view") || "traveloverview";
 
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [notification, setNotification] = useState({
@@ -145,14 +145,14 @@ const TravelPackagesDashboard = () => {
               handleDelete={handleDelete}
             />
           </>
-        ) : view === "travel overview" ? (
+        ) : view === "traveloverview" ? (
           <OverviewComponent
             packages={packages}
             navigateTo={(page) =>
               navigate(`/dashboard/travelpackages?view=${page}`)
             }
           />
-        ) : view === "travel bookings" ? (
+        ) : view === "travelbookings" ? (
           <AllBookings />
         ) : (
           <PackagesListComponent

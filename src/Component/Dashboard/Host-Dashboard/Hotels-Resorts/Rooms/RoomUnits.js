@@ -1,10 +1,9 @@
 import { useState } from "react";
 
-const UnitModal = ({ open, onClose, unit, onSave }) => {
+const UnitModal = ({ open, onClose, unit, onSave, isLoading }) => {
   const [form, setForm] = useState({
     label: unit?.label || "",
-    status: unit?.status || "active",
-    notes: unit?.notes || "",
+    status: unit?.active !== undefined ? (unit.active ? "active" : "inactive") : "active",
   });
 
   const handleChange = (e) => {
@@ -38,6 +37,7 @@ const UnitModal = ({ open, onClose, unit, onSave }) => {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               placeholder="e.g. 101, A1, Room 1"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -50,6 +50,7 @@ const UnitModal = ({ open, onClose, unit, onSave }) => {
               value={form.status}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              disabled={isLoading}
             >
               <option value="active">Active</option>
               <option value="maintenance">Maintenance</option>
@@ -57,33 +58,21 @@ const UnitModal = ({ open, onClose, unit, onSave }) => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-              rows={3}
-              placeholder="Optional notes about this unit"
-            />
-          </div>
-
           <div className="flex items-center justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
-              {unit ? "Update Unit" : "Add Unit"}
+              {isLoading ? "Saving..." : unit ? "Update Unit" : "Add Unit"}
             </button>
           </div>
         </form>

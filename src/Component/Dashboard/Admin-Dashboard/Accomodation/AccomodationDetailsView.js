@@ -18,7 +18,7 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
   
   const tabs = [
     { id: "overview", label: "Overview" },
-    { id: "rooms", label: `Rooms (${accommodation.rooms?.length || 0})` },
+    { id: "rooms", label: "Rooms"},
     { id: "bookings", label: "Bookings" },
     { id: "settings", label: "Settings" },
   ];

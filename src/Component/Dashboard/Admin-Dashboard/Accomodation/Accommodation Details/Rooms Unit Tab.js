@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
 import { FaArrowLeft, FaEdit, FaFilter, FaPlus, FaTrash, FaExclamationCircle } from "react-icons/fa";
 import UnitModal from "../Hotels-Resorts/Rooms/RoomUnits";
-import { useGetRoomUnitsQuery } from "../../../../../Services/acccommodationRoomUnitsApi"; // Adjust path as needed
+import { useGetRoomUnitsQuery, useCreateRoomUnitMutation, useDeleteRoomUnitMutation } from "../../../../../Services/acccommodationRoomUnitsApi";
 
 const RoomUnitsTab = ({ room, onBack }) => {
   const { data: roomUnitsData, isLoading, isError } = useGetRoomUnitsQuery(room.id);
+  const [createRoomUnit, { isLoading: isCreating }] = useCreateRoomUnitMutation();
+  const [deleteRoomUnit] = useDeleteRoomUnitMutation();
   const [units, setUnits] = useState([]);
 
   useEffect(() => {
-    if (roomUnitsData?.data) {
-      setUnits(roomUnitsData.data);
+    if (roomUnitsData && Array.isArray(roomUnitsData)) {
+      setUnits(roomUnitsData);
     }
   }, [roomUnitsData]);
 
@@ -27,59 +29,95 @@ const RoomUnitsTab = ({ room, onBack }) => {
     setOpenUnitModal(true);
   };
 
-  const handleDeleteUnit = (id) => {
+  const handleDeleteUnit = async (id) => {
     if (window.confirm("Are you sure you want to delete this unit?")) {
-      setUnits(units.filter((u) => u.id !== id));
+      try {
+        await deleteRoomUnit({ roomId: room.id, unitId: id }).unwrap();
+        
+        // Remove from local state after successful deletion
+        setUnits(units.filter((u) => u.id !== id));
+      } catch (error) {
+        console.error("Failed to delete unit:", error);
+        const errorMessage = error?.data?.message || "Failed to delete unit. Please try again.";
+        alert(errorMessage);
+      }
     }
   };
 
-  const filteredUnits =
-    filterStatus === "all"
+  const handleSaveUnit = async (unitData) => {
+    if (selectedUnit) {
+      // Update existing unit
+      setUnits(
+        units.map((u) =>
+          u.id === selectedUnit.id ? { ...u, ...unitData } : u
+        )
+      );
+    } else {
+      // Create new unit
+      try {
+        // Transform the data to match API expectations
+        const payload = {
+          roomId: room.id,
+          labels: [unitData.label], // Convert single label to array
+          active: unitData.status === "active",
+          notes: unitData.notes || ""
+        };
+        
+        const response = await createRoomUnit(payload).unwrap();
+        
+        // Add the newly created unit(s) to the list
+        // API might return an array of created units
+        if (Array.isArray(response)) {
+          setUnits([...units, ...response]);
+        } else {
+          setUnits([...units, response]);
+        }
+      } catch (error) {
+        console.error("Failed to create unit:", error);
+        const errorMessage = error?.data?.message || "Failed to create unit. Please try again.";
+        alert(errorMessage);
+        return; // Don't close modal on error
+      }
+    }
+    setOpenUnitModal(false);
+  };
+
+  const filteredUnits = Array.isArray(units)
+    ? filterStatus === "all"
       ? units
-      : units.filter((u) => u.status === filterStatus);
+      : filterStatus === "active"
+      ? units.filter((u) => u.active === true)
+      : units.filter((u) => u.active === false)
+    : [];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-700";
-      case "maintenance":
-        return "bg-orange-100 text-orange-700";
-      case "inactive":
-        return "bg-gray-100 text-gray-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
+  const getStatusColor = (active) => {
+    return active
+      ? "bg-green-100 text-green-700"
+      : "bg-gray-100 text-gray-700";
   };
 
-  // Example values (you can replace these with actual data later)
   const roomUnitsSetting = 2;
-  const activeUnits = units.filter((u) => u.status === "active").length;
-  const totalUnits = units.length;
-
+  const activeUnits = Array.isArray(units) ? units.filter((u) => u.active === true).length : 0;
+  const totalUnits = Array.isArray(units) ? units.length : 0;
   const exceedsCapacity = activeUnits > roomUnitsSetting;
 
   return (
     <div className="flex gap-6">
-      {/* Loading State */}
       {isLoading && (
         <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 px-6 py-12">
           <p className="text-center text-gray-500">Loading units...</p>
         </div>
       )}
 
-      {/* Error State */}
       {isError && (
         <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 px-6 py-12">
           <p className="text-center text-red-500">Error loading units. Please try again.</p>
         </div>
       )}
 
-      {/* Main Content */}
       {!isLoading && !isError && (
         <>
-          {/* Left Section - Main Table */}
           <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100">
-            {/* Header */}
             <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
@@ -97,14 +135,14 @@ const RoomUnitsTab = ({ room, onBack }) => {
 
               <button
                 onClick={handleAddUnit}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                disabled={isCreating}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FaPlus size={14} />
-                Add Unit
+                {isCreating ? "Creating..." : "Add Unit"}
               </button>
             </div>
 
-            {/* Filter and Count */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FaFilter className="text-gray-400" size={14} />
@@ -115,7 +153,6 @@ const RoomUnitsTab = ({ room, onBack }) => {
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
-                  <option value="maintenance">Maintenance</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
@@ -125,7 +162,6 @@ const RoomUnitsTab = ({ room, onBack }) => {
               </p>
             </div>
 
-            {/* Table */}
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -137,7 +173,7 @@ const RoomUnitsTab = ({ room, onBack }) => {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Notes
+                      Created At
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Actions
@@ -152,15 +188,15 @@ const RoomUnitsTab = ({ room, onBack }) => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                            unit.status
+                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            unit.active
                           )}`}
                         >
-                          {unit.status}
+                          {unit.active ? "Active" : "Inactive"}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {unit.notes || "—"}
+                        {new Date(unit.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-3">
@@ -195,7 +231,6 @@ const RoomUnitsTab = ({ room, onBack }) => {
             )}
           </div>
 
-          {/* Right Side Card */}
           <div className="w-80 bg-white rounded-2xl shadow-md border border-gray-100 p-6 flex flex-col justify-between">
             <div>
               <h3 className="text-base font-semibold text-gray-900 mb-4">
@@ -233,25 +268,13 @@ const RoomUnitsTab = ({ room, onBack }) => {
             </div>
           </div>
 
-          {/* Unit Modal */}
           {openUnitModal && (
             <UnitModal
               open={openUnitModal}
               onClose={() => setOpenUnitModal(false)}
               unit={selectedUnit}
-              onSave={(unitData) => {
-                if (selectedUnit) {
-                  setUnits(
-                    units.map((u) =>
-                      u.id === selectedUnit.id ? { ...u, ...unitData } : u
-                    )
-                  );
-                } else {
-                  const newUnit = { id: units.length + 1, ...unitData };
-                  setUnits([...units, newUnit]);
-                }
-                setOpenUnitModal(false);
-              }}
+              onSave={handleSaveUnit}
+              isLoading={isCreating}
             />
           )}
         </>

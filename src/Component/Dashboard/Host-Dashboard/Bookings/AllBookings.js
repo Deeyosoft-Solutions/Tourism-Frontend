@@ -2,12 +2,12 @@ import { useState, useMemo } from "react";
 import { Eye } from "lucide-react";
 import LoadingSpinner from "../../../LoadingSpinner";
 import ErrorMessage from "../../../ErrorMessage";
-import { useGetAccommodationBookingsQuery } from "../../../../Services/accommodationBooking";
 import BookingDetailsView from "./BookingDetails";
 import { FaCalendarAlt } from "react-icons/fa";
+import { useGetRoomBookingsQuery } from "../../../../Services/accommodationBooking";
 
 const ForUserBookings = () => {
-  const { data, isLoading, isError, error, refetch } = useGetAccommodationBookingsQuery();
+  const { data, isLoading, isError, error, refetch } = useGetRoomBookingsQuery();
   const bookings = useMemo(() => data?.data || [], [data]);
 
   const [filters, setFilters] = useState({

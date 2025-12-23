@@ -48,6 +48,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
   const activeTravelPackageView = searchParams.get("view");
   const isAccomodationsActive =
     location.pathname === "/dashboard/accomodations";
+  const isTravelActive = location.pathname === "/dashboard/travelpackages";
 
   return (
     <div
@@ -184,21 +185,6 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                             Accommodation Type
                           </button>
                         )}
-                       {/* 
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/dashboard/accomodations?view=stays&room=true`
-                            )
-                          }
-                          className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
-                            activeRoom
-                              ? "text-red-500 font-medium"
-                              : "text-gray-600 hover:text-red-500"
-                          }`}
-                        >
-                          Rooms
-                        </button> */}
                       </div>
                     )}
                   </div>
@@ -212,36 +198,34 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
             <div>
               <NavLink
                 to="/dashboard/travelpackages?view=traveloverview"
-                className={({ isActive }) =>
-                  getLinkClasses(
-                    isActive || activeTravelPackageView === "traveloverview"
-                  )
-                }
+                className={({ isActive }) => getLinkClasses(isTravelActive)}
               >
                 Travel Packages
               </NavLink>
 
               {/* Submenu */}
               <div className="mx-2 my-3 flex flex-col space-y-1">
-                {["travel overview", "packages", "travel bookings"].map((sub) => {
-                  const isActiveSub = activeTravelPackageView === sub;
+                {["traveloverview", "packages", "travelbookings"].map(
+                  (sub) => {
+                    const isActiveSub = activeTravelPackageView === sub;
 
-                  return (
-                    <button
-                      key={sub}
-                      onClick={() =>
-                        navigate(`/dashboard/travelpackages?view=${sub}`)
-                      }
-                      className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
-                        isActiveSub
-                          ? "text-red-500 font-medium"
-                          : "text-gray-600 hover:text-red-500"
-                      }`}
-                    >
-                      {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() =>
+                          navigate(`/dashboard/travelpackages?view=${sub}`)
+                        }
+                        className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
+                          isActiveSub
+                            ? "text-red-500 font-medium"
+                            : "text-gray-600 hover:text-red-500"
+                        }`}
+                      >
+                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
+                      </button>
+                    );
+                  }
+                )}
               </div>
             </div>
           )}

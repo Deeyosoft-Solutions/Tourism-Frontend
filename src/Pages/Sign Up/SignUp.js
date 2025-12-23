@@ -1,12 +1,14 @@
-// components/RegisterForm.js
 import { useNavigate } from "react-router-dom";
 import { useRegisterUserMutation } from "../../Services/registerApiSlice";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { useState } from "react";
+import { X, Upload, User } from "lucide-react";
 
 const RegisterPage = () => {
   const [registerUser, { isLoading }] = useRegisterUserMutation();
   const navigate = useNavigate();
+  const [imagePreview, setImagePreview] = useState(null);
 
   const formik = useFormik({
     initialValues: {
@@ -21,7 +23,8 @@ const RegisterPage = () => {
       username: "",
       password: "",
       confirmPassword: "",
-      role: "NORMAL", // ✅ Default role
+      role: "NORMAL",
+      images: null,
     },
     validationSchema: Yup.object().shape({
       firstName: Yup.string().required("First name is required"),
@@ -38,7 +41,8 @@ const RegisterPage = () => {
       confirmPassword: Yup.string()
         .oneOf([Yup.ref("password"), null], "Passwords must match")
         .required("Confirm Password is required"),
-      role: Yup.string().required("Role is required"), // still required, but defaulted
+      role: Yup.string().required("Role is required"),
+      images: Yup.mixed().nullable(),
     }),
     onSubmit: async (values, { setSubmitting, setStatus }) => {
       try {
@@ -56,6 +60,23 @@ const RegisterPage = () => {
       }
     },
   });
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      formik.setFieldValue("images", file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    formik.setFieldValue("images", null);
+    setImagePreview(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
@@ -77,6 +98,52 @@ const RegisterPage = () => {
               <p>{formik.status}</p>
             </div>
           )}
+
+          {/* Image Upload Section */}
+          <div className="mb-8">
+            <h2 className="text-gray-800 font-semibold text-lg mb-4 pb-2 border-b-2 border-red-100">
+              Profile Picture
+            </h2>
+            <div className="flex flex-col items-center">
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-40 h-40 rounded-full object-cover border-4 border-red-500 shadow-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-0 right-0 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-all duration-200"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-40 h-40 rounded-full bg-gray-200 border-4 border-dashed border-gray-400 flex items-center justify-center">
+                  <User size={60} className="text-gray-400" />
+                </div>
+              )}
+              
+              <label
+                htmlFor="images"
+                className="mt-4 cursor-pointer bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
+              >
+                <Upload size={18} />
+                {imagePreview ? "Change Photo" : "Upload Photo"}
+              </label>
+              <input
+                type="file"
+                id="images"
+                name="images"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+              <p className="text-gray-500 text-xs mt-2">Optional - JPG, PNG, GIF (Max 5MB)</p>
+            </div>
+          </div>
 
           {/* Personal Information */}
           <div className="mb-8">

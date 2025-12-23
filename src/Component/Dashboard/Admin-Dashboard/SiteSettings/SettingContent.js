@@ -15,6 +15,7 @@ const SettingsContent = () => {
     data: siteSettings,
     isLoading: isFetching,
     isError,
+    refetch,
   } = useGetSiteSettingsQuery();
 
   const [updateSiteSetting, { isLoading: isUpdating }] =
@@ -51,16 +52,24 @@ const SettingsContent = () => {
     }),
     onSubmit: async (values) => {
       try {
+        const formData = new FormData();
+
+        // append all fields
+        Object.keys(values).forEach((key) => {
+          formData.append(key, values[key]);
+        });
+
         if (hasExistingData) {
-          await updateSiteSetting(values).unwrap();
+          await updateSiteSetting(formData).unwrap();
+          refetch();
           alert("Site settings updated successfully!");
         } else {
-          await createSiteSetting(values).unwrap();
+          await createSiteSetting(formData).unwrap();
           alert("Site settings created successfully!");
         }
       } catch (error) {
-        const errorMessage = hasExistingData 
-          ? "Failed to update site settings." 
+        const errorMessage = hasExistingData
+          ? "Failed to update site settings."
           : "Failed to create site settings.";
         alert(errorMessage);
       }
@@ -94,12 +103,11 @@ const SettingsContent = () => {
   const handleLogoUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result);
-        formik.setFieldValue("logo", reader.result);
-      };
-      reader.readAsDataURL(file);
+      const previewURL = URL.createObjectURL(file);
+      setLogoPreview(previewURL);
+
+      // Save the actual file, not the preview URL
+      formik.setFieldValue("logo", file);
     }
   };
 
@@ -112,7 +120,7 @@ const SettingsContent = () => {
 
   // Determine button text based on data existence
   const isLoading = hasExistingData ? isUpdating : isCreating;
-  
+
   const getButtonText = () => {
     if (isLoading) {
       return hasExistingData ? "Updating..." : "Creating...";
@@ -160,7 +168,11 @@ const SettingsContent = () => {
               {logoPreview ? (
                 <div className="flex items-center space-x-4">
                   <img
-                    src={`${API_BASE_URL}/${logoPreview}`}
+                    src={
+                      logoPreview.startsWith("blob:")
+                        ? logoPreview // new upload preview
+                        : `${API_BASE_URL}${logoPreview}` // existing server image
+                    }
                     alt="Logo Preview"
                     className="w-20 h-20 object-cover rounded-md"
                   />

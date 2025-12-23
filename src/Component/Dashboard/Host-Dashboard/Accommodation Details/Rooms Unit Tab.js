@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { FaArrowLeft, FaEdit, FaFilter, FaPlus, FaTrash, FaExclamationCircle } from "react-icons/fa";
 import UnitModal from "../Hotels-Resorts/Rooms/RoomUnits";
-import { useGetRoomUnitsQuery } from "../../../../Services/acccommodationRoomUnitsApi";
+import { useGetRoomUnitsQuery, useCreateRoomUnitMutation, useDeleteRoomUnitMutation } from "../../../../Services/acccommodationRoomUnitsApi";
 
 const RoomUnitsTab = ({ room, onBack }) => {
   const { data: roomUnitsData, isLoading, isError } = useGetRoomUnitsQuery(room.id);
+  const [createRoomUnit, { isLoading: isCreating }] = useCreateRoomUnitMutation();
+  const [deleteRoomUnit] = useDeleteRoomUnitMutation();
   const [units, setUnits] = useState([]);
 
   useEffect(() => {
@@ -27,10 +29,57 @@ const RoomUnitsTab = ({ room, onBack }) => {
     setOpenUnitModal(true);
   };
 
-  const handleDeleteUnit = (id) => {
+  const handleDeleteUnit = async (id) => {
     if (window.confirm("Are you sure you want to delete this unit?")) {
-      setUnits(units.filter((u) => u.id !== id));
+      try {
+        await deleteRoomUnit({ roomId: room.id, unitId: id }).unwrap();
+        
+        // Remove from local state after successful deletion
+        setUnits(units.filter((u) => u.id !== id));
+      } catch (error) {
+        console.error("Failed to delete unit:", error);
+        const errorMessage = error?.data?.message || "Failed to delete unit. Please try again.";
+        alert(errorMessage);
+      }
     }
+  };
+
+  const handleSaveUnit = async (unitData) => {
+    if (selectedUnit) {
+      // Update existing unit
+      setUnits(
+        units.map((u) =>
+          u.id === selectedUnit.id ? { ...u, ...unitData } : u
+        )
+      );
+    } else {
+      // Create new unit
+      try {
+        // Transform the data to match API expectations
+        const payload = {
+          roomId: room.id,
+          labels: [unitData.label], // Convert single label to array
+          active: unitData.status === "active",
+          notes: unitData.notes || ""
+        };
+        
+        const response = await createRoomUnit(payload).unwrap();
+        
+        // Add the newly created unit(s) to the list
+        // API might return an array of created units
+        if (Array.isArray(response)) {
+          setUnits([...units, ...response]);
+        } else {
+          setUnits([...units, response]);
+        }
+      } catch (error) {
+        console.error("Failed to create unit:", error);
+        const errorMessage = error?.data?.message || "Failed to create unit. Please try again.";
+        alert(errorMessage);
+        return; // Don't close modal on error
+      }
+    }
+    setOpenUnitModal(false);
   };
 
   const filteredUnits = Array.isArray(units)
@@ -86,10 +135,11 @@ const RoomUnitsTab = ({ room, onBack }) => {
 
               <button
                 onClick={handleAddUnit}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                disabled={isCreating}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FaPlus size={14} />
-                Add Unit
+                {isCreating ? "Creating..." : "Add Unit"}
               </button>
             </div>
 
@@ -223,25 +273,8 @@ const RoomUnitsTab = ({ room, onBack }) => {
               open={openUnitModal}
               onClose={() => setOpenUnitModal(false)}
               unit={selectedUnit}
-              onSave={(unitData) => {
-                if (selectedUnit) {
-                  setUnits(
-                    units.map((u) =>
-                      u.id === selectedUnit.id ? { ...u, ...unitData } : u
-                    )
-                  );
-                } else {
-                  const newUnit = { 
-                    id: Date.now().toString(), 
-                    roomId: room.id,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    ...unitData 
-                  };
-                  setUnits([...units, newUnit]);
-                }
-                setOpenUnitModal(false);
-              }}
+              onSave={handleSaveUnit}
+              isLoading={isCreating}
             />
           )}
         </>
