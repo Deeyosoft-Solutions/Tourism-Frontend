@@ -117,7 +117,7 @@ const MainNavBar = () => {
           <Link to="/notifications" className="hover:text-blue-300 text-white">
             <FaBell className="lg:text-xl md:text-lg" />
           </Link>
-          <Link to="/cart" className="hover:text-blue-300 text-white">
+          <Link to="/localproducts/cart" className="hover:text-blue-300 text-white">
             <FaShoppingCart className="lg:text-xl md:text-lg" />
           </Link>
           {/* <Link to="/cart" className="hover:text-blue-300 text-white">

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { FaShoppingCart, FaTrashAlt } from "react-icons/fa";
+import { FaShoppingCart, FaTrashAlt, FaUpload } from "react-icons/fa";
 import DeleteConfirmationModal from "../../DeleteModal";
-import PurchaseModal from "./QrPurchaseModal";
-import CODPurchaseModal from "./CODPurchaseModal";
 import {
   useClearCartMutation,
   useGetCartQuery,
@@ -11,6 +9,7 @@ import {
 } from "../../../Services/cartSlice";
 import ErrorMessage from "../../ErrorMessage";
 import { useNavigate } from "react-router-dom";
+import { useCreateOrderMutation } from "../../../Services/productOrder";
 
 const ShoppingCartPage = () => {
   const navigate = useNavigate();
@@ -18,18 +17,17 @@ const ShoppingCartPage = () => {
   const [removeFromCart] = useRemoveFromCartMutation();
   const [clearCart] = useClearCartMutation();
   const [updateCart] = useUpdateCartMutation();
+  const [createOrder, { isLoading: isOrderLoading }] = useCreateOrderMutation();
 
   const [products, setProducts] = useState([]);
   const [hasCheckedItems, setHasCheckedItems] = useState(false);
   const [total, setTotal] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemsToDelete, setItemsToDelete] = useState([]);
-  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState(null);
   const [isClearCartModalOpen, setIsClearCartModalOpen] = useState(false);
-  // We no longer need this state since we're using vendor-specific checkout
-  // const [hasSelectedItems, setHasSelectedItems] = useState(false);
-  const [currentVendorCheckout, setCurrentVendorCheckout] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState("QR");
+  const [receiptImage, setReceiptImage] = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
 
   // Transform API data to match component's structure
   useEffect(() => {
@@ -94,7 +92,6 @@ const ShoppingCartPage = () => {
   // Calculate total and checked items
   useEffect(() => {
     let calculatedTotal = 0;
-    // Removed unused variable anyItemSelected
 
     products.forEach((vendor) => {
       vendor.items.forEach((item) => {
@@ -117,63 +114,48 @@ const ShoppingCartPage = () => {
     return (item.quantity * item.price).toFixed(2);
   };
 
-  // Calculate vendor total (for checked items only)
-  const calculateVendorTotal = (vendorIndex) => {
-    let vendorTotal = 0;
-    const vendor = products[vendorIndex];
-
-    vendor.items.forEach((item) => {
-      if (item.checked) {
-        vendorTotal += item.quantity * item.price;
-      }
+  // Get checked items
+  const getCheckedItems = () => {
+    const checkedItems = [];
+    products.forEach((vendor) => {
+      vendor.items.forEach((item) => {
+        if (item.checked) {
+          checkedItems.push(item);
+        }
+      });
     });
-
-    return vendorTotal;
-  };
-
-  // Check if vendor has any checked items
-  const hasVendorCheckedItems = (vendorIndex) => {
-    const vendor = products[vendorIndex];
-    return vendor.items.some((item) => item.checked);
+    return checkedItems;
   };
 
   // Update quantity of an item
   const updateQuantity = async (vendorIndex, itemIndex, newQuantity) => {
-    // Create a deep copy of the products array
     const updatedProducts = JSON.parse(JSON.stringify(products));
     const item = updatedProducts[vendorIndex].items[itemIndex];
 
-    // Convert to number in case it's a string
     newQuantity = Number(newQuantity);
 
-    // Validate new quantity
     if (isNaN(newQuantity) || newQuantity < 1) {
-      return; // Exit if invalid
+      return;
     }
 
-    // Ensure quantity doesn't exceed stock
     newQuantity = Math.min(newQuantity, item.stock);
 
-    // Don't make API call if quantity didn't change
     if (newQuantity === item.quantity) {
       return;
     }
 
-    // Optimistic UI update
     item.quantity = newQuantity;
     setProducts(updatedProducts);
 
     try {
-      // Use updateCart mutation
       await updateCart({
         productId: item.productId,
         quantity: newQuantity,
       });
-      refetch(); // Sync with server
+      refetch();
     } catch (error) {
       console.error("Failed to update quantity:", error);
-      // Revert on error
-      refetch(); // Get fresh data from server
+      refetch();
     }
   };
 
@@ -243,35 +225,76 @@ const ShoppingCartPage = () => {
 
   // Format price with currency
   const formatPrice = (price) => {
-    return `$${price.toFixed(2)}`;
+    return `Rs. ${price.toFixed(2)}`;
   };
 
-  // Handle checkout for a specific vendor
-  const handleVendorCheckout = (vendorIndex) => {
-    setCurrentVendorCheckout(vendorIndex);
-    setIsPurchaseModalOpen(true);
+  // Handle receipt upload
+  const handleReceiptUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setReceiptImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  // Get filtered cart items for the current vendor checkout
-  const getCurrentVendorItems = () => {
-    if (currentVendorCheckout === null) return products;
+  // Handle order confirmation
+  const handleConfirmOrder = async () => {
+    if (!cartData?.id) {
+      alert("Cart ID not found");
+      return;
+    }
 
-    // Return only the current vendor being checked out with only checked items
-    const vendor = products[currentVendorCheckout];
-    if (!vendor) return products;
+    // Get all checked items and group by seller
+    const checkedItemsBySeller = {};
+    products.forEach((vendor) => {
+      const vendorCheckedItems = vendor.items.filter((item) => item.checked);
+      if (vendorCheckedItems.length > 0) {
+        checkedItemsBySeller[vendor.vendorId] = vendorCheckedItems;
+      }
+    });
 
-    const filteredVendor = {
-      ...vendor,
-      items: vendor.items.filter((item) => item.checked),
-    };
+    if (Object.keys(checkedItemsBySeller).length === 0) {
+      alert("Please select items to order");
+      return;
+    }
 
-    return [filteredVendor];
-  };
+    if (selectedPayment === "QR" && !receiptImage) {
+      alert("Please upload payment receipt for QR payment");
+      return;
+    }
 
-  // Get total for the current vendor checkout
-  const getCurrentVendorTotal = () => {
-    if (currentVendorCheckout === null) return total;
-    return calculateVendorTotal(currentVendorCheckout);
+    try {
+      // Create orders for each seller
+      for (const [sellerId, items] of Object.entries(checkedItemsBySeller)) {
+        const formData = new FormData();
+        formData.append("cartId", cartData.id);
+        formData.append("sellerId", sellerId);
+
+        items.forEach((item) => {
+          formData.append("selectedItemIds[]", item.id);
+        });
+
+        formData.append("paymentMethod", selectedPayment);
+
+        if (selectedPayment === "QR" && receiptImage) {
+          formData.append("receiptImage", receiptImage);
+        }
+
+        await createOrder(formData).unwrap();
+      }
+
+      alert("Order placed successfully!");
+      setReceiptImage(null);
+      setReceiptPreview(null);
+      refetch();
+    } catch (error) {
+      console.error("Failed to create order:", error);
+      alert("Failed to place order. Please try again.");
+    }
   };
 
   // Check if cart is empty
@@ -297,39 +320,57 @@ const ShoppingCartPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-red-500 mb-2">My Cart</h1>
+        <p className="text-gray-600">
+          Review your selected products and proceed to checkout when you're
+          ready
+        </p>
+      </div>
+
+      {/* Search and Filter Bar */}
+      <div className="mb-6 flex flex-col md:flex-row items-center gap-4">
+        <div className="flex-1 w-full relative">
+          <input
+            type="text"
+            placeholder="Search Products In Cart..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-16">
         {/* Cart Items Section */}
         <div className="flex-grow">
-          <div className="mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             {!isCartEmpty && (
-              <div className="hidden md:grid grid-cols-12 gap-4 border-black border-b pb-2 items-center mb-4">
-                <div className="col-span-5 font-medium py-3">Product</div>
-                <div className="col-span-2 font-medium text-center py-3">
+              <div className="hidden md:grid grid-cols-12 gap-4 border-b border-gray-200 p-4 bg-gray-50">
+                <div className="col-span-5 font-semibold">Product</div>
+                <div className="col-span-2 font-semibold text-center">
                   Quantity
                 </div>
-                <div className="col-span-2 font-medium text-center py-3">
-                  Price
-                </div>
-                <div className="col-span-2 font-medium text-center py-3">
+                <div className="col-span-2 font-semibold text-center">Rate</div>
+                <div className="col-span-2 font-semibold text-center">
                   Subtotal
                 </div>
-                <div className="col-span-1">
+                <div className="col-span-1 flex justify-end gap-2">
                   {hasCheckedItems && (
                     <button
                       onClick={prepareDeleteCheckedItems}
-                      className="flex p-2 text-lg items-center gap-1 text-white rounded hover:ring-1 hover:ring-red-600"
+                      className="p-2 text-red-500 hover:bg-red-50 rounded"
                       title="Delete selected items"
                     >
-                      <FaTrashAlt className="text-red-500" />
+                      <FaTrashAlt />
                     </button>
                   )}
                   {!isCartEmpty && (
                     <button
                       onClick={() => setIsClearCartModalOpen(true)}
-                      className="flex p-2 text-lg items-center gap-1 text-white rounded hover:ring-1 hover:ring-red-600 mt-2"
+                      className="p-2 text-red-500 hover:bg-red-50 rounded"
                       title="Clear entire cart"
                     >
-                      <FaShoppingCart className="text-red-500" />
+                      <FaShoppingCart />
                     </button>
                   )}
                 </div>
@@ -355,16 +396,17 @@ const ShoppingCartPage = () => {
               products.map((vendorGroup, vendorIndex) => (
                 <div
                   key={vendorGroup.vendorId}
-                  className="mb-8 border rounded-lg p-4 shadow"
+                  className="border-b border-gray-200 last:border-b-0"
                 >
-                  <div className="flex items-center mb-4">
+                  <div className="flex items-center p-4 bg-gray-50">
                     <input
                       type="checkbox"
                       checked={vendorGroup.checked}
                       onChange={() => toggleVendorCheck(vendorIndex)}
-                      className="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      className="mr-3 h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
                     />
-                    <span className="font-medium text-yellow-500">
+                    <FaShoppingCart className="text-red-500 mr-2" />
+                    <span className="font-medium text-red-500">
                       {vendorGroup.vendor}
                     </span>
                   </div>
@@ -372,38 +414,50 @@ const ShoppingCartPage = () => {
                   {vendorGroup.items.map((item, itemIndex) => (
                     <div
                       key={item.id}
-                      className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center border-b py-4"
+                      className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 hover:bg-gray-50"
                     >
-                      <div className="pl-2 col-span-5 flex items-center">
+                      <div className="col-span-5 flex items-center gap-3">
                         <input
                           type="checkbox"
                           checked={item.checked}
                           onChange={() =>
                             toggleItemCheck(vendorIndex, itemIndex)
                           }
-                          className="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
                         />
-                        <div className="ml-6">
+                        <img
+                          src={item.image || "/placeholder.png"}
+                          alt={item.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div>
                           <p className="font-medium">{item.name}</p>
-                          <p className="text-gray-500">Color: {item.color}</p>
-                          <p className="text-gray-500 text-sm">
-                            Available: {item.stock}
+                          <p className="text-sm text-gray-500">
+                            Color: {item.color}
                           </p>
-                          {item.quantity > item.stock && (
-                            <p className="text-red-500 text-sm">
-                              Quantity exceeds available stock!
-                            </p>
-                          )}
+                          <button
+                            onClick={async () => {
+                              try {
+                                await removeFromCart(item.productId);
+                                refetch();
+                              } catch (error) {
+                                console.error("Failed to remove item:", error);
+                              }
+                            }}
+                            className="text-xs text-red-500 hover:underline"
+                          >
+                            × Remove
+                          </button>
                         </div>
                       </div>
 
                       <div className="col-span-2 flex justify-center">
-                        <div className="flex items-center border rounded-md">
+                        <div className="flex items-center border border-gray-300 rounded">
                           <button
-                            className={`px-3 py-1 text-lg ${
+                            className={`px-3 py-1 ${
                               item.quantity <= 1
-                                ? "text-gray-400 cursor-not-allowed"
-                                : ""
+                                ? "text-gray-300"
+                                : "text-gray-700"
                             }`}
                             onClick={() => {
                               if (item.quantity > 1) {
@@ -418,16 +472,14 @@ const ShoppingCartPage = () => {
                           >
                             -
                           </button>
-
-                          <span className="px-3 py-1 border-x">
+                          <span className="px-4 py-1 border-x border-gray-300">
                             {item.quantity}
                           </span>
-
                           <button
-                            className={`px-3 py-1 text-lg ${
+                            className={`px-3 py-1 ${
                               item.quantity >= item.stock
-                                ? "text-gray-400 cursor-not-allowed"
-                                : ""
+                                ? "text-gray-300"
+                                : "text-gray-700"
                             }`}
                             onClick={() => {
                               if (item.quantity < item.stock) {
@@ -445,137 +497,141 @@ const ShoppingCartPage = () => {
                         </div>
                       </div>
 
-                      <div className="col-span-2 text-center">
+                      <div className="col-span-2 text-center font-medium">
                         {formatPrice(item.price)}
                       </div>
-                      <div className="col-span-2 text-center font-medium">
+                      <div className="col-span-2 text-center font-semibold">
                         ${calculateSubtotal(item)}
                       </div>
                     </div>
                   ))}
-
-                  {/* Vendor checkout section */}
-                  <div className="mt-6 flex flex-col md:flex-row justify-between items-center">
-                    <div className="flex items-center mb-4 md:mb-0">
-                      <div className="flex items-center space-x-3 border-gray-200 p-2 rounded">
-                        <div className="flex items-center p-2 border border-gray-300 rounded-md hover:ring-1 hover:ring-gray-900">
-                          <input
-                            type="radio"
-                            id={`cod-${vendorIndex}`}
-                            name={`payment-${vendorIndex}`}
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
-                            onChange={() => setSelectedPayment("cod")}
-                            checked={selectedPayment === "cod"}
-                          />
-                          <label
-                            htmlFor={`cod-${vendorIndex}`}
-                            className="ml-2"
-                          >
-                            Cash on delivery
-                          </label>
-                        </div>
-
-                        <div className="flex items-center p-2 border border-gray-300 rounded-md hover:ring-1 hover:ring-gray-900">
-                          <input
-                            type="radio"
-                            id={`payNow-${vendorIndex}`}
-                            name={`payment-${vendorIndex}`}
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
-                            onChange={() => setSelectedPayment("payNow")}
-                            checked={selectedPayment === "payNow"}
-                          />
-                          <label
-                            htmlFor={`payNow-${vendorIndex}`}
-                            className="ml-2"
-                          >
-                            Pay Now Through Qr
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="items-center">
-                      <button
-                        onClick={() => handleVendorCheckout(vendorIndex)}
-                        className="bg-red-500 text-white py-2 px-8 rounded-md hover:bg-red-700 transition-colors font-medium font-Open disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={
-                          !selectedPayment ||
-                          !hasVendorCheckedItems(vendorIndex)
-                        }
-                      >
-                        Checkout
-                      </button>
-                    </div>
-                  </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-10">
+              <div className="text-center py-20">
+                <FaShoppingCart className="text-6xl text-gray-300 mx-auto mb-4" />
                 <p className="text-xl text-gray-500">Your cart is empty</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Cart Summary Section - No checkout button */}
-        <div className="lg:w-80">
-          <div className="h-fit w-full p-6 border-gray-500 border rounded-lg shadow-xl bg-white">
-            <h2 className="text-xl font-medium font-poppins mb-4">
-              Cart summary
-            </h2>
+        {/* Price Details Section */}
+        <div className="lg:w-[300px]">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-4">
+            <h2 className="text-xl font-semibold mb-6">Price Details</h2>
 
             {/* Selected items list */}
-            <div className="max-h-60 overflow-y-auto mb-4">
-              {products.map((vendorGroup) =>
-                vendorGroup.items
-                  .filter((item) => item.checked)
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between items-center py-2 border-b"
-                    >
-                      <span className="text-gray-700 truncate max-w-[180px]">
-                        {item.name} × {item.quantity}
-                      </span>
-                      <span className="text-gray-500">{item.price}</span>
-                    </div>
-                  ))
+            <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+              {getCheckedItems().map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span className="text-gray-600">
+                    {item.name} × {item.quantity}
+                  </span>
+                  <span className="text-gray-800">
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+              {getCheckedItems().length === 0 && (
+                <p className="text-gray-400 text-sm">No items selected</p>
               )}
             </div>
 
-            <div className="border-t py-4 my-4">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-lg">Total</span>
-                <span className="text-lg font-semibold">
-                  ${total.toFixed(2)}
-                </span>
+            <div className="border-t border-gray-200 pt-4 mb-6">
+              <div className="flex justify-between text-lg font-semibold">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
               </div>
             </div>
+
+            {/* Payment Method */}
+            <div className="mb-6">
+              <h3 className="font-semibold mb-3">Payment Method</h3>
+              <div className="space-y-2">
+                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="QR"
+                    checked={selectedPayment === "QR"}
+                    onChange={(e) => setSelectedPayment(e.target.value)}
+                    className="h-4 w-4 text-red-500 focus:ring-red-500"
+                  />
+                  <span className="ml-3">QR Payment</span>
+                </label>
+                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="COD"
+                    checked={selectedPayment === "COD"}
+                    onChange={(e) => setSelectedPayment(e.target.value)}
+                    className="h-4 w-4 text-red-500 focus:ring-red-500"
+                  />
+                  <span className="ml-3">Cash on Delivery</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Payment Receipt Upload */}
+            {selectedPayment === "QR" && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">Payment Receipt</h3>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+                  {receiptPreview ? (
+                    <div className="relative">
+                      <img
+                        src={receiptPreview}
+                        alt="Receipt preview"
+                        className="w-full h-40 object-cover rounded"
+                      />
+                      <button
+                        onClick={() => {
+                          setReceiptImage(null);
+                          setReceiptPreview(null);
+                        }}
+                        className="absolute top-0 right-0 bg-red-500 text-white w-6 h-6 rounded-full hover:bg-red-600 flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center cursor-pointer">
+                      <FaUpload className="text-3xl text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600 mb-1">
+                        Upload Receipt
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        PNG, JPG up to 5MB
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleReceiptUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Confirm Order Button */}
+            <button
+              onClick={handleConfirmOrder}
+              disabled={
+                !hasCheckedItems ||
+                isOrderLoading ||
+                (selectedPayment === "QR" && !receiptImage)
+              }
+              className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {isOrderLoading ? "Processing..." : "Confirm Order"}
+            </button>
           </div>
         </div>
       </div>
-
-      {selectedPayment === "cod" ? (
-        <CODPurchaseModal
-          isOpen={isPurchaseModalOpen}
-          onClose={() => {
-            setIsPurchaseModalOpen(false);
-            setCurrentVendorCheckout(null);
-          }}
-          cartItems={getCurrentVendorItems()}
-          total={getCurrentVendorTotal()}
-        />
-      ) : (
-        <PurchaseModal
-          isOpen={isPurchaseModalOpen}
-          onClose={() => {
-            setIsPurchaseModalOpen(false);
-            setCurrentVendorCheckout(null);
-          }}
-          cartItems={getCurrentVendorItems()}
-          total={getCurrentVendorTotal()}
-        />
-      )}
     </div>
   );
 };

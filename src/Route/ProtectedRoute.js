@@ -1,24 +1,32 @@
 import { Outlet, Navigate } from "react-router-dom";
-import { useFetchUserProfileQuery } from "../Services/userApiSlice"; // adjust path if different
+import { useFetchUserProfileQuery } from "../Services/userApiSlice";
 
 const ProtectedRoute = () => {
   const token = localStorage.getItem("accessToken");
 
-  // Only call the query if token exists
-  const { data, isLoading, isError } = useFetchUserProfileQuery(undefined, {
+  const {
+    data: user,
+    isLoading,
+    isError,
+  } = useFetchUserProfileQuery(undefined, {
     skip: !token,
   });
 
-  if (isLoading) {
-    return <h1>Loading...</h1>;
+  // While verifying token → block UI
+  if (token && isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Checking session...
+      </div>
+    );
   }
 
-  // If there's no token or error fetching user data, redirect to login
-  if (!token || isError || !data) {
+  // ❌ No token or invalid session
+  if (!token || isError || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // If user data is successfully fetched, grant access
+  // ✅ Authenticated
   return <Outlet />;
 };
 

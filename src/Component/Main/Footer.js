@@ -10,20 +10,22 @@ import { useGetSiteSettingsQuery } from "../../Services/SiteSettingApi";
 import ErrorMessage from "../ErrorMessage";
 import LoadingSpinner from "../LoadingSpinner";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const Footer = () => {
   const { data, isLoading, error } = useGetSiteSettingsQuery();
 
-  if (isLoading) return <LoadingSpinner fullScreen={true} size="medium" />;
+  if (isLoading) return <LoadingSpinner fullScreen size="medium" />;
   if (error || !data)
     return (
       <ErrorMessage message="Failed to load site settings." className="m-4" />
     );
+
   const defaultSettings = {
     name: "PanchPokhari Tourism",
     phoneNumber: "+1012 3456 7890",
     email: "demo@gmail.com",
     address: "132 Dartmouth Street, Boston, MA 02156, USA",
-    district: "",
     facebookLink: "#",
     instagramLink: "#",
     twitterLink: "#",
@@ -32,12 +34,12 @@ const Footer = () => {
   };
 
   const siteSettings = { ...defaultSettings, ...data };
+
   const {
     name,
     phoneNumber,
     email,
     address,
-    // district,
     facebookLink,
     instagramLink,
     twitterLink,
@@ -46,16 +48,17 @@ const Footer = () => {
   } = siteSettings;
 
   return (
-    <footer className="bg-[#EFEFEF] text-black py-10">
-      <div className="container mx-auto py-10 border-t-2 border-gray-800">
-        <div className="mx-4 sm:mx-8 p-2 flex flex-col md:flex-row justify-between items-center md:items-start space-y-6 md:space-y-0">
-          {/* Logo & Name */}
-          <div className="text-center md:text-left w-full md:w-auto">
+    <footer className="bg-[#EFEFEF] text-black">
+      <div className="container mx-auto border-t-2 border-gray-800 py-10">
+        {/* GRID WRAPPER */}
+        <div className="mx-4 sm:mx-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 items-start">
+          {/* LOGO & NAME */}
+          <div className="text-center sm:text-left">
             {logo && (
               <img
-                src={`/uploads/${logo}`}
+                src={`${API_BASE_URL}${logo}`}
                 alt="Logo"
-                className="h-12 mb-2 mx-auto md:mx-0"
+                className="h-20 sm:h-24 md:h-28 mb-3 mx-auto sm:mx-0 object-contain"
               />
             )}
             <p className="lg:text-3xl xl:text-4xl md:text-2xl text-xl font-redressed text-red-700">
@@ -63,43 +66,45 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Contact Info */}
-          <div className="text-center md:text-left max-w-72 min-w-48 px-2 w-full md:w-auto">
-            <h2 className="lg:text-xl font-bold md:text-sm text-yellow-500 mb-4">
+          {/* CONTACT INFO */}
+          <div className="text-center sm:text-left max-w-xs">
+            <h2 className="lg:text-xl md:text-sm font-bold text-yellow-500 mb-4">
               Reach Us
             </h2>
             <ul className="space-y-4">
-              <li className="flex items-center justify-center md:justify-start space-x-4">
-                <BiSolidPhoneCall className="lg:text-2xl md:text-xl text-black" />
-                <span className="text-gray-700 lg:text-base md:text-sm font-Open">
+              <li className="flex items-start gap-4 justify-center sm:justify-start">
+                <BiSolidPhoneCall className="text-xl flex-shrink-0" />
+                <span className="text-gray-700 text-sm lg:text-base break-words">
                   {phoneNumber}
                 </span>
               </li>
-              <li className="flex items-center justify-center md:justify-start space-x-4">
-                <BiSolidEnvelope className="lg:text-2xl md:text-xl text-black flex-shrink-0" />
-                <span className="text-gray-700 lg:text-base md:text-sm font-Open overflow-hidden text-ellipsis whitespace-nowrap">
+
+              <li className="flex items-start gap-4 justify-center sm:justify-start">
+                <BiSolidEnvelope className="text-xl flex-shrink-0" />
+                <span className="text-gray-700 text-sm lg:text-base break-words">
                   {email}
                 </span>
               </li>
-              <li className="flex items-center justify-center md:justify-start space-x-4">
-                <BiSolidMap className="text-xl md:text-2xl text-black flex-shrink-0" />
-                <span className="text-gray-700 lg:text-base md:text-sm font-Open overflow-hidden text-ellipsis whitespace-nowrap">
+
+              <li className="flex items-start gap-4 justify-center sm:justify-start">
+                <BiSolidMap className="text-xl flex-shrink-0" />
+                <span className="text-gray-700 text-sm lg:text-base break-words">
                   {address}
                 </span>
               </li>
             </ul>
           </div>
 
-          {/* Navigation Links */}
-          <div className="text-center md:text-left max-w-72 min-w-48 px-2 w-full md:w-auto">
-            <h2 className="lg:text-xl font-bold md:text-sm text-yellow-500 mb-4">
+          {/* NAV LINKS */}
+          <div className="text-center sm:text-left">
+            <h2 className="lg:text-xl md:text-sm font-bold text-yellow-500 mb-4">
               {name}
             </h2>
-            <ul className="space-y-4">
+            <ul className="space-y-3">
               <li>
                 <Link
                   to="/"
-                  className="hover:text-yellow-500 text-gray-700 lg:text-base md:text-sm font-Open"
+                  className="text-gray-700 text-sm lg:text-base hover:text-yellow-500"
                 >
                   Home
                 </Link>
@@ -107,7 +112,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/ContactUs"
-                  className="hover:text-yellow-500 text-gray-700 lg:text-base md:text-sm font-Open"
+                  className="text-gray-700 text-sm lg:text-base hover:text-yellow-500"
                 >
                   Contact Us
                 </Link>
@@ -115,9 +120,9 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Social Media Links */}
-          <div className="text-center md:text-left max-w-72 min-w-48 px-2 w-full md:w-auto">
-            <h2 className="lg:text-xl font-bold md:text-sm text-yellow-500 mb-4">
+          {/* SOCIAL LINKS */}
+          <div className="text-center sm:text-left">
+            <h2 className="lg:text-xl md:text-sm font-bold text-yellow-500 mb-4">
               Find Us On
             </h2>
             <ul className="space-y-4">
@@ -141,18 +146,16 @@ const Footer = () => {
               ].map((social, index) => (
                 <li
                   key={index}
-                  className="flex items-center justify-center md:justify-start space-x-4"
+                  className="flex items-center gap-4 justify-center sm:justify-start"
                 >
-                  <div className="w-7 h-7 flex items-center justify-center rounded-full bg-red-700 text-white">
+                  <span className="w-8 h-8 flex items-center justify-center rounded-full bg-red-700 text-white">
                     {social.icon}
-                  </div>
+                  </span>
                   <a
                     href={social.link || "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={social.label}
-                    aria-label={social.label}
-                    className="text-gray-700 text-base font-Open hover:text-yellow-500"
+                    className="text-gray-700 text-sm lg:text-base hover:text-yellow-500"
                   >
                     {social.label}
                   </a>

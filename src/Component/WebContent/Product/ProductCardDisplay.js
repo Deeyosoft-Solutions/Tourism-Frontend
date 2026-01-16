@@ -1,25 +1,44 @@
 import { HiOutlineShoppingBag } from "react-icons/hi";
 import RatingStars from "./../../RatingStars";
 import { useNavigate } from "react-router-dom";
+import { useGetAverageReviewQuery } from "../../../Services/feedbackApiSlice";
+import { skipToken } from "@reduxjs/toolkit/query";
+import { useAddToCartMutation } from "../../../Services/cartSlice";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const ProductCard = ({ product, handleProductClick }) => {
   const navigate = useNavigate();
+  const [addToCart] = useAddToCartMutation();
 
-  const handleAddToCartClick = () => {
-    navigate(`/localproducts/cart`);
+  const handleAddToCartClick = async () => {
+    if (!product?.id) return;
+
+    try {
+      await addToCart({
+        productId: product.id,
+        quantity: 1,
+      });
+
+      navigate("/localproducts/cart");
+    } catch (error) {
+      console.error("Failed to add to cart:", error);
+    }
   };
+
+  const { data: averageData, isLoading: avgLoading } = useGetAverageReviewQuery(
+    product?.id ? { targetType: "product", targetId: product.id } : skipToken
+  );
 
   // Safely access product properties with fallbacks
   const productImages = product?.images || [];
-  const firstImage = productImages.length > 0 
-    ? `${API_BASE_URL}${productImages[0]}`
-    : '/placeholder-image.jpg'; 
+  const firstImage =
+    productImages.length > 0
+      ? `${API_BASE_URL}${productImages[0]}`
+      : "/placeholder-image.jpg";
 
-  const productName = product?.name || 'Unnamed Product';
+  const productName = product?.name || "Unnamed Product";
   const productPrice = product?.price || 0;
-  const productReviews = product?.reviews || [];
 
   return (
     <div
@@ -34,7 +53,7 @@ const ProductCard = ({ product, handleProductClick }) => {
           className="w-full h-full object-contain"
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src = '/placeholder-image.jpg';
+            e.target.src = "/placeholder-image.jpg";
           }}
         />
       </div>
@@ -46,10 +65,16 @@ const ProductCard = ({ product, handleProductClick }) => {
           <p className="text-red-600 text-base font-bold font-poppins">
             Nrs. {productPrice.toLocaleString()}
           </p>
-          <RatingStars rating={productReviews} />
+          {avgLoading ? (
+            <p className="text-sm text-gray-500">Loading ratings...</p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <RatingStars rating={averageData?.average || 0} />
+            </div>
+          )}
         </div>
         <div className="flex items-center m-3 justify-center">
-          <button 
+          <button
             className="items-center bg-blue-500 text-white px-3 py-2 rounded-full shadow-sm hover:bg-blue-700 transition"
             onClick={(e) => {
               e.stopPropagation();

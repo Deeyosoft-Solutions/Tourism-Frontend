@@ -36,8 +36,8 @@ export const accommodationApi = createApi({
       invalidatesTags: ['Accommodation'],
     }),
     updateAccommodation: builder.mutation({
-      query: ({ id, ...data }) => ({
-        url: `/accommodations/${id}`,
+      query: ({ slug, ...data }) => ({
+        url: `/accommodations/${slug}`,
         method: 'PATCH', // or PUT depending on your API
         body: data,
       }),

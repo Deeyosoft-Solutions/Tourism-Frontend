@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaBell, FaShoppingCart, FaBars, FaTimes } from "react-icons/fa";
-import { MdTranslate } from "react-icons/md";
+// import { MdTranslate } from "react-icons/md";
 import { useDispatch } from "react-redux";
 import { logout, setCredentials } from "./../../../Features/slice/authSlice";
 import { useFetchUserProfileQuery } from "../../../Services/userApiSlice";
@@ -96,12 +96,12 @@ const SideNavBar = () => {
           <Link to="/notifications" className="hover:text-blue-300 text-black">
             <FaBell className="lg:text-xl md:text-lg" />
           </Link>
-          <Link to="/cart" className="hover:text-blue-300 text-black">
+          <Link to="/localproducts/cart" className="hover:text-blue-300 text-black">
             <FaShoppingCart className="lg:text-xl md:text-lg" />
           </Link>
-          <Link to="/cart" className="hover:text-blue-300 text-black">
+          {/* <Link to="/cart" className="hover:text-blue-300 text-black">
             <MdTranslate className="lg:text-xl font-semibold md:text-lg" />
-          </Link>
+          </Link> */}
         </div>
 
         {/* Authentication Buttons */}
@@ -135,7 +135,7 @@ const SideNavBar = () => {
                 {/* User Image */}
                 <img
                   src={
-                    `${API_BASE_URL}/${images}` ||
+                    `${API_BASE_URL}${images}` ||
                     "/assets/Images/default-avatar-image.jpg"
                   }
                   alt="User"
@@ -177,7 +177,7 @@ const SideNavBar = () => {
                     <div className="flex items-center">
                       <img
                         src={
-                          `${API_BASE_URL}/${images}` ||
+                          `${API_BASE_URL}${images}` ||
                           "/assets/Images/default-avatar-image.jpg"
                         }
                         alt="User"

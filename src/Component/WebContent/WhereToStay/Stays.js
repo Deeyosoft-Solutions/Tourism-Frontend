@@ -23,7 +23,6 @@ const Stays = () => {
     withinKm: "",
     from: "",
     to: "",
-    published: "yes",
     status: "",
   });
   const [sortBy, setSortBy] = useState("newest");
@@ -51,6 +50,11 @@ const Stays = () => {
   // ✅ Apply filters
   const filteredStays = stays.filter((stay) => {
     let match = true;
+
+    // ✅ FIXED: Only show published accommodations
+    if (stay.published !== true) {
+      return false;
+    }
 
     if (filters.q) {
       match =
@@ -180,9 +184,6 @@ const Stays = () => {
                   alt={stay.name}
                   className="w-full h-full object-cover"
                 />
-                <span className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-3 py-1 rounded-full capitalize">
-                  {stay.type || "Stay"}
-                </span>
               </div>
 
               {/* Content Section */}
@@ -267,7 +268,6 @@ const Stays = () => {
                   withinKm: "",
                   from: "",
                   to: "",
-                  published: "yes",
                   status: "",
                 })
               }

@@ -1,6 +1,6 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-const OverviewTab = ({ accommodation }) => {
+const OverviewTab = ({ accommodation, rooms = [], roomsLoading, roomsError }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Property Details */}
@@ -142,10 +142,166 @@ const OverviewTab = ({ accommodation }) => {
         </div>
       </div>
 
+      {/* Rooms Section */}
+      <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Rooms</h2>
+        
+        {roomsLoading ? (
+          <p className="text-sm text-gray-600">Loading rooms...</p>
+        ) : roomsError ? (
+          <p className="text-sm text-red-600">Error loading rooms</p>
+        ) : rooms.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {rooms.map((room) => (
+              <div
+                key={room.id}
+                className="border border-gray-200 rounded-lg overflow-hidden"
+              >
+                {/* Room Image */}
+                {room.images && room.images.length > 0 && (
+                  <img
+                    src={`${API_BASE_URL}${room.images[0]}`}
+                    alt={room.name}
+                    className="w-full h-48 object-contain"
+                  />
+                )}
+                
+                {/* Room Details */}
+                <div className="p-5">
+                  <h3 className="font-semibold text-lg text-gray-900 mb-3">
+                    {room.name}
+                  </h3>
+                  
+                  <div className="space-y-2.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Base Price:</span>
+                      <span className="font-semibold text-gray-900">NPR {room.basePrice.toLocaleString()}/night</span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Units:</span>
+                      <span className="text-gray-900">{room.totalUnits}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Capacity:</span>
+                      <span className="text-gray-900">{room.capacity} guests</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Guests:</span>
+                      <span className="text-gray-900">{room.maxGuests} guests</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Bedrooms:</span>
+                      <span className="text-gray-900">{room.bedrooms}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Beds:</span>
+                      <span className="text-gray-900">{room.beds}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Bathrooms:</span>
+                      <span className="text-gray-900">{room.bathrooms}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Floor:</span>
+                      <span className="text-gray-900">{room.floor}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Room Size:</span>
+                      <span className="text-gray-900">{room.roomSizeSqFt} sq ft</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">View Type:</span>
+                      <span className="text-gray-900 capitalize">{room.viewType}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Check-in:</span>
+                      <span className="text-gray-900">{room.checkInFrom}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Check-out:</span>
+                      <span className="text-gray-900">{room.checkOutUntil}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Children Allowed:</span>
+                      <span className="text-gray-900">{room.childrenAllowed ? 'Yes' : 'No'}</span>
+                    </div>
+
+                    {room.childrenAllowed && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Max Children:</span>
+                        <span className="text-gray-900">{room.maxChildren}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Extra Guest Fee:</span>
+                      <span className="text-gray-900">NPR {room.extraGuestFee}</span>
+                    </div>
+                  </div>
+
+                  {/* Room Amenities */}
+                  {room.amenities && room.amenities.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Amenities</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {room.amenities.map((amenity, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full"
+                          >
+                            {amenity}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status Badges */}
+                  <div className="mt-4 flex gap-2">
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        room.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-red-800"
+                      }`}
+                    >
+                      {room.status}
+                    </span>
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        room.published
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {room.published ? 'Published' : 'Unpublished'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-600">No rooms available for this property.</p>
+        )}
+      </div>
+
       {/* Images */}
       {accommodation.images && accommodation.images.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Images</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Property Images</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {accommodation.images.map((img, idx) => (
               <img

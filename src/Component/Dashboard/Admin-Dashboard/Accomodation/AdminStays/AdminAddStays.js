@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FaTimes, FaCheck, FaArrowRight } from "react-icons/fa";
 import { useGetAccomodationCategoriesQuery } from "../../../../../Services/accomodationCategoryApiSlice";
 import { useAddAccommodationMutation } from "../../../../../Services/accomodationApiSlice";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const ForAdminAddStay = ({ onClose, onAdded }) => {
   const [addAccommodation, { isLoading }] = useAddAccommodationMutation();
@@ -501,7 +502,7 @@ const ForAdminAddStay = ({ onClose, onAdded }) => {
                         className="h-20 w-full bg-gray-200 rounded flex items-center justify-center overflow-hidden"
                       >
                         <img
-                          src={img}
+                          src={`${API_BASE_URL}${img}`}
                           alt={`upload-${idx}`}
                           className="object-cover h-full w-full"
                         />

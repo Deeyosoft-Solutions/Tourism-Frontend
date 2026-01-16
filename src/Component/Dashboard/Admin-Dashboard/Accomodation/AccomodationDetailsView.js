@@ -6,15 +6,21 @@ import BookingsTab from './Accommodation Details/Bookings Tab';
 import SettingsTab from './Accommodation Details/Settings Tab';
 import RoomUnitsTab from './Accommodation Details/Rooms Unit Tab';
 import UnitAllocationTab from "./Accommodation Details/Unit Allocation Tab";
+import BookingDetailsTab from "./Accommodation Details/Booking Details Tab";
 import { useGetBookingsByAccommodationIdQuery } from "../../../../Services/accommodationBooking";
+import { useGetRoomsQuery } from "../../../../Services/accommodationRoomApiSlice";
 
 const AccommodationDetailsView = ({ accommodation, onClose }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [viewMode, setViewMode] = useState(null); // 'units' or 'calendar'
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [viewMode, setViewMode] = useState(null); 
 
   // Fetch bookings
-    const { data: allBookings } = useGetBookingsByAccommodationIdQuery(accommodation.id);
+  const { data: allBookings } = useGetBookingsByAccommodationIdQuery(accommodation.id);
+  
+  // Fetch rooms for overview tab
+  const { data: roomsData, isLoading: roomsLoading, error: roomsError } = useGetRoomsQuery(accommodation.slug || accommodation.id);
   
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -25,10 +31,13 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    // Clear selected room when switching tabs
+    // Clear selected room and booking when switching tabs
     if (tabId !== "rooms") {
       setSelectedRoom(null);
       setViewMode(null);
+    }
+    if (tabId !== "bookings") {
+      setSelectedBooking(null);
     }
   };
 
@@ -45,6 +54,14 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
   const handleBackToRooms = () => {
     setSelectedRoom(null);
     setViewMode(null);
+  };
+
+  const handleViewBookingDetails = (booking) => {
+    setSelectedBooking(booking);
+  };
+
+  const handleBackToBookings = () => {
+    setSelectedBooking(null);
   };
 
   return (
@@ -96,10 +113,15 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
 
       {/* Content */}
       <div className="mi mx-auto px-6 py-6">
-        {!selectedRoom ? (
+        {!selectedRoom && !selectedBooking ? (
           <>
             {activeTab === "overview" && (
-              <OverviewTab accommodation={accommodation} />
+              <OverviewTab 
+                accommodation={accommodation} 
+                rooms={roomsData?.data || []}
+                roomsLoading={roomsLoading}
+                roomsError={roomsError}
+              />
             )}
             {activeTab === "rooms" && (
               <RoomsTab
@@ -109,7 +131,10 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
               />
             )}
             {activeTab === "bookings" && (
-              <BookingsTab accommodation={allBookings} />
+              <BookingsTab 
+                accommodation={allBookings}
+                onViewBookingDetails={handleViewBookingDetails}
+              />
             )}
             {activeTab === "settings" && (
               <SettingsTab accommodation={accommodation} />
@@ -122,6 +147,12 @@ const AccommodationDetailsView = ({ accommodation, onClose }) => {
             )}
             {viewMode === "calendar" && (
               <UnitAllocationTab room={selectedRoom} onBack={handleBackToRooms} />
+            )}
+            {selectedBooking && (
+              <BookingDetailsTab 
+                booking={selectedBooking} 
+                onBack={handleBackToBookings}
+              />
             )}
           </>
         )}

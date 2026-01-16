@@ -2,13 +2,14 @@ import { FiMenu } from "react-icons/fi";
 import { useFetchUserProfileQuery } from "../../Services/userApiSlice";
 import HomeButton from "../HomeButton";
 import LoadingSpinner from "../LoadingSpinner";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const Header = ({ onMenuToggle }) => {
   const { data, isLoading } = useFetchUserProfileQuery();
 
   if (isLoading) return <LoadingSpinner fullScreen={true} size="medium" />;
 
-const userName = `${data?.firstName || "User"} ${data?.lastName || ""}`;
+  const userName = `${data?.firstName || "User"} ${data?.lastName || ""}`;
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between px-4 py-2 border-b-2 border-gray-300">
@@ -36,7 +37,11 @@ const userName = `${data?.firstName || "User"} ${data?.lastName || ""}`;
           className="w-6 h-6"
         />
         <img
-          src={data?.images || "/assets/Images/default-avatar-image.jpg"}
+          src={
+            data?.images
+              ? `${API_BASE_URL}${data.images}`
+              : "/public/assets/Images/default-avatar-image.jpg"
+          }
           alt="User"
           className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
         />

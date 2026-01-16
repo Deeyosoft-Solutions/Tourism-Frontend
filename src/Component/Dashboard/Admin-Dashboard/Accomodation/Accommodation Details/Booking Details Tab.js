@@ -1,6 +1,5 @@
 import { FaArrowLeft, FaUser, FaCalendar, FaHome, FaDollarSign, FaInfoCircle } from "react-icons/fa";
 import { useGetUserByIdQuery } from "../../../../../Services/userApiSlice";
-import { useGetAccommodationsQuery } from "../../../../../Services/accomodationApiSlice";
 
 /* -----------------------------
    Helpers
@@ -127,21 +126,15 @@ const CustomerDetails = ({ customerId }) => {
 /* -----------------------------
    Main Component
 ------------------------------ */
-const BookingDetailsView = ({ booking, onClose }) => {
-  const { data: accommodationsData } = useGetAccommodationsQuery();
-  
-  const accommodationName = accommodationsData?.data?.find(
-    (a) => a.id === booking.accommodationId
-  )?.name || 'N/A';
-
+const BookingDetailsTab = ({ booking, onBack }) => {
   const nights = calculateNights(booking.checkIn, booking.checkOut);
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
+    <div className="bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
-          onClick={onClose}
+          onClick={onBack}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-100 transition"
         >
           <FaArrowLeft size={14} /> Back to Bookings
@@ -172,28 +165,6 @@ const BookingDetailsView = ({ booking, onClose }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Property Information */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaHome className="text-gray-500" />
-              Property Information
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Property Name:</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {accommodationName}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Property ID:</span>
-                <span className="text-sm font-medium text-gray-900 font-mono">
-                  {booking.accommodationId.slice(0, 8)}...
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* Booking Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -238,7 +209,7 @@ const BookingDetailsView = ({ booking, onClose }) => {
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Room ID:</span>
                 <span className="text-sm font-medium text-gray-900 font-mono">
-                  {booking.roomId.slice(0, 8)}...
+                  {booking.roomId}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -426,4 +397,4 @@ const BookingDetailsView = ({ booking, onClose }) => {
   );
 };
 
-export default BookingDetailsView;
+export default BookingDetailsTab;

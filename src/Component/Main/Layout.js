@@ -9,7 +9,6 @@ import WhereToGoDetails from "./../WebContent/Section Details/WhereToGoDetails";
 import WhereToStayDetails from "./../WebContent/Section Details/WhereToStayDetails";
 import LocalDetails from "./../WebContent/Section Details/LocalDetails";
 import ContactUsDetails from "./../WebContent/Section Details/ContactUsDetails";
-import CategoryDetails from "./../WebContent/Section Details/CategoryDetails";
 import TravelPackageDetails from "../WebContent/Section Details/TravelPackageDetails";
 
 const Layout = () => {
@@ -18,18 +17,28 @@ const Layout = () => {
   const isActive = (path) => location.pathname === path;
 
   const isProductPage = location.pathname.startsWith("/localproducts/product");
-  const isDestinationPage = location.pathname.startsWith("/wheretogo/destination");
-  const isAccomodationPage = location.pathname.startsWith("/wheretostay/accomodation");
-  const isTravelDealsPage = location.pathname.startsWith("/travel-packages/travel-deals");
+  const isDestinationPage = location.pathname.startsWith(
+    "/wheretogo/destination"
+  );
+  const isAccomodationPage = location.pathname.startsWith(
+    "/wheretostay/accomodation"
+  );
+  const isTravelDealsPage = location.pathname.startsWith(
+    "/travel-packages/travel-deals"
+  );
   const isCartPage = location.pathname.startsWith("/localproducts/cart");
   const isLocalPage = location.pathname.startsWith("/localproducts");
   const isStayPage = location.pathname.startsWith("/wheretostay");
   const isGoPage = location.pathname.startsWith("/wheretogo");
   const isTravelPage = location.pathname.startsWith("/travel-packages");
-
+  const isCategoryPage = location.pathname.startsWith(
+    "/localproducts/category"
+  );
   const isSignUpPage = location.pathname.toLowerCase().startsWith("/signup");
   const isLogInPage = location.pathname.toLowerCase().startsWith("/login");
-  const isResetPage = location.pathname.toLowerCase().startsWith("/reset-password");
+  const isResetPage = location.pathname
+    .toLowerCase()
+    .startsWith("/reset-password");
 
   return (
     <div className="w-full">
@@ -42,14 +51,22 @@ const Layout = () => {
           isTravelDealsPage ||
           isCartPage ||
           isStayPage ||
-          isTravelPage || isGoPage || isLocalPage ? (
+          isTravelPage ||
+          isGoPage ||
+          isLocalPage ? (
             <SideNavBar />
           ) : (
             <MainNavBar />
           )}
 
           {/* Hero Section */}
-          {!["/localproducts","/wheretogo","/wheretostay", "/travel-packages"].some(isActive) && <HeroSection />}
+          {!isCategoryPage &&
+            ![
+              "/localproducts",
+              "/wheretogo",
+              "/wheretostay",
+              "/travel-packages",
+            ].some(isActive) && <HeroSection />}
         </>
       )}
 
@@ -64,8 +81,6 @@ const Layout = () => {
         <LocalDetails />
       ) : isActive("/contactus") ? (
         <ContactUsDetails />
-      ) : window.location.pathname.startsWith("/localproducts/category") ? (
-        <CategoryDetails />
       ) : isActive("/travel-packages") ? (
         <TravelPackageDetails />
       ) : (

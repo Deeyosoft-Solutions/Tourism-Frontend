@@ -40,7 +40,7 @@ const LocalProductPage = () => {
   const categories = Array.isArray(categoriesData)
     ? categoriesData
     : categoriesData?.data || [];
-  const totalProducts = productsData?.totalProducts || 0;
+  const totalProducts = productsData?.total || 0;
   const totalPages = Math.ceil(totalProducts / productsPerPage);
 
   const handleCategoryClick = (category) =>
@@ -111,10 +111,6 @@ const LocalProductPage = () => {
             className="flex-grow py-2 text-gray-700 focus:outline-none placeholder-gray-400"
           />
         </div>
-
-        <button className="flex items-center justify-center py-2 px-4 rounded-md border-l border-gray-200 bg-white transition-all">
-          <span className="text-gray-600 text-sm font-medium">Filters</span>
-        </button>
         <select className="py-2 px-4 border-l border-gray-200 rounded-md text-gray-600 text-sm focus:outline-none">
           <option>Newest</option>
           <option>Oldest</option>

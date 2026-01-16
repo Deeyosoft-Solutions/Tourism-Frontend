@@ -176,17 +176,6 @@ export default function FilterComponent({
               value={filters.destinations}
               onChange={(e) => setFilters((prev) => ({ ...prev, destinations: e.target.value }))}
             />
-
-            <select
-              value={filters.published}
-              onChange={(e) => setFilters((prev) => ({ ...prev, published: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            >
-              <option value="">Any</option>
-              <option value="yes">Published</option>
-              <option value="no">Unpublished</option>
-            </select>
-
             <div className="flex gap-2 md:col-span-2">
               <Input
                 placeholder="Check-in"

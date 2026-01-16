@@ -3,6 +3,7 @@ import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import {
   useGetAccommodationsQuery,
   useDeleteAccommodationMutation,
+  useUpdateAccommodationMutation,
 } from "../../../../Services/accomodationApiSlice";
 import ForAdminAddStay from "./AdminStays/AdminAddStays";
 import AccommodationDetailsView from "./AccomodationDetailsView";
@@ -13,13 +14,14 @@ import ForAdminUpdateStay from "./AdminStays/AdminUpdateStays";
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const AdminAccomodationTable = () => {
-  const { data, isLoading, isError, error, refetch } =
-    useGetAccommodationsQuery();
+  const { data, isLoading, isError, error, refetch } = useGetAccommodationsQuery();
   const [deleteAccommodation] = useDeleteAccommodationMutation();
+  const [updateAccommodation] = useUpdateAccommodationMutation();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
   const [accommodationToEdit, setAccommodationToEdit] = useState(null);
+  const [localStatus, setLocalStatus] = useState({}); // to store instant dropdown changes
 
   const accommodations = data?.data || [];
 
@@ -38,6 +40,20 @@ const AdminAccomodationTable = () => {
         console.error("Delete failed:", err);
         alert("Failed to delete accommodation. Please try again.");
       }
+    }
+  };
+
+  const handleStatusChange = async (slug, newStatus) => {
+    try {
+      // Update locally first for instant feedback
+      setLocalStatus((prev) => ({ ...prev, [slug]: newStatus }));
+
+      // Call API to update status
+      await updateAccommodation({ slug, published: newStatus }).unwrap();
+      refetch(); // optional, keeps data in sync
+    } catch (err) {
+      console.error("Status update failed:", err);
+      alert("Failed to update status. Please try again.");
     }
   };
 
@@ -78,8 +94,6 @@ const AdminAccomodationTable = () => {
                   <th className="px-6 py-3">Image</th>
                   <th className="px-6 py-3">Name</th>
                   <th className="px-6 py-3">Address</th>
-                  <th className="px-6 py-3">Price/Night</th>
-                  <th className="px-6 py-3">Max Guests</th>
                   <th className="px-6 py-3">Status</th>
                   <th className="px-6 py-3 text-center">Actions</th>
                 </tr>
@@ -88,10 +102,7 @@ const AdminAccomodationTable = () => {
               <tbody>
                 {isError ? (
                   <tr>
-                    <td
-                      colSpan="7"
-                      className="px-6 py-6 text-center text-red-600"
-                    >
+                    <td colSpan="7" className="px-6 py-6 text-center text-red-600">
                       <ErrorMessage
                         message={error?.message || "Internal server error"}
                         onRetry={refetch}
@@ -99,74 +110,85 @@ const AdminAccomodationTable = () => {
                     </td>
                   </tr>
                 ) : accommodations.length > 0 ? (
-                  accommodations.map((acc) => (
-                    <tr
-                      key={acc.id}
-                      className="border-b hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        {acc.images?.[0] ? (
-                          <img
-                            src={
-                              acc.images?.[0]
-                                ? `${API_BASE_URL}${acc.images[0]}`
-                                : "/placeholder.png"
-                            }
-                            alt="No Images"
-                            className="w-16 h-16 object-cover rounded-md border"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-md bg-gray-100 flex items-center justify-center text-xs text-gray-400">
-                            No Image
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-800">
-                        {acc.name}
-                      </td>
-                      <td className="px-6 py-4">{acc.address}</td>
-                      <td className="px-6 py-4">Rs. {acc.pricePerNight}</td>
-                      <td className="px-6 py-4">{acc.maxGuests}</td>
-                      <td
-                        className={`px-6 py-4 font-medium ${
-                          acc.status === "active"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
+                  accommodations.map((acc) => {
+                    const currentStatus =
+                      localStatus[acc.slug] !== undefined
+                        ? localStatus[acc.slug]
+                        : acc.published;
+
+                    return (
+                      <tr
+                        key={acc.id}
+                        className="border-b hover:bg-gray-50 transition-colors"
                       >
-                        {acc.status}
-                      </td>
-                      <td className="px-6 py-4 text-center space-x-3">
-                        <button
-                          onClick={() => setSelectedAccommodation(acc)}
-                          className="text-blue-600 hover:text-blue-800 transition"
-                          title="View Details"
-                        >
-                          <FaEye className="inline-block w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(acc)}
-                          className="text-green-500 hover:text-green-700 transition"
-                          title="Edit"
-                        >
-                          <FaEdit className="inline-block w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(acc.id)}
-                          className="text-red-600 hover:text-red-800 transition"
-                          title="Delete"
-                        >
-                          <FaTrash className="inline-block w-5 h-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-6 py-4">
+                          {acc.images?.[0] ? (
+                            <img
+                              src={
+                                acc.images?.[0]
+                                  ? `${API_BASE_URL}${acc.images[0]}`
+                                  : "/placeholder.png"
+                              }
+                              alt="No Images"
+                              className="w-16 h-16 object-cover rounded-md border"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-md bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                              No Image
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 font-medium text-gray-800">
+                          {acc.name}
+                        </td>
+                        <td className="px-6 py-4">{acc.address}</td>
+                        <td className="px-6 py-4">
+                          <select
+                            value={currentStatus ? "active" : "inactive"}
+                            onChange={(e) =>
+                              handleStatusChange(
+                                acc.slug,
+                                e.target.value === "active"
+                              )
+                            }
+                            className={`font-medium px-2 py-1 rounded-md ${
+                              currentStatus ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                          </select>
+                        </td>
+
+                        <td className="px-6 py-4 text-center space-x-3">
+                          <button
+                            onClick={() => setSelectedAccommodation(acc)}
+                            className="text-blue-600 hover:text-blue-800 transition"
+                            title="View Details"
+                          >
+                            <FaEye className="inline-block w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(acc)}
+                            className="text-green-500 hover:text-green-700 transition"
+                            title="Edit"
+                          >
+                            <FaEdit className="inline-block w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(acc.id)}
+                            className="text-red-600 hover:text-red-800 transition"
+                            title="Delete"
+                          >
+                            <FaTrash className="inline-block w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td
-                      colSpan="7"
-                      className="px-6 py-6 text-center text-gray-500"
-                    >
+                    <td colSpan="7" className="px-6 py-6 text-center text-gray-500">
                       No accommodations found.
                     </td>
                   </tr>
@@ -177,10 +199,7 @@ const AdminAccomodationTable = () => {
 
           {/* Add Accommodation Modal */}
           {isAddModalOpen && (
-            <ForAdminAddStay
-              onClose={() => setIsAddModalOpen(false)}
-              onAdded={refetch}
-            />
+            <ForAdminAddStay onClose={() => setIsAddModalOpen(false)} onAdded={refetch} />
           )}
 
           {/* Update Accommodation Modal */}

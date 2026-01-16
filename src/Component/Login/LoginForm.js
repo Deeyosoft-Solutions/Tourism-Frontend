@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLoginMutation } from "../../Services/auth/authApiSlice";
-import { useNavigate } from "react-router-dom"; // For navigation after login
+import { Link, useNavigate } from "react-router-dom"; // For navigation after login
 import { useDispatch } from "react-redux"; // For dispatching Redux actions
 import { setCredentials } from "../../Features/slice/authSlice"; // Corrected import for Redux action
 import ForgetPasswordModal from "./ForgetPassword";
@@ -14,7 +14,6 @@ const LoginForm = () => {
   const navigate = useNavigate(); // Hook for navigation
   const dispatch = useDispatch(); // Hook for dispatching Redux actions
   // const { data: profile } = useFetchUserProfileQuery(); // Fetch profile
-
 
   const [showModal, setShowModal] = useState(false); // State to control modal visibility
 
@@ -36,7 +35,7 @@ const LoginForm = () => {
 
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      
+
       navigate("/");
       window.location.replace("/");
     } catch (err) {
@@ -101,13 +100,16 @@ const LoginForm = () => {
               type="button"
               className="text-sm text-indigo-600 hover:text-indigo-500 focus:outline-none"
               onClick={() => {
-                openModal(); 
+                openModal();
               }}
             >
               Forget Password?
             </button>
 
-            <ForgetPasswordModal showModal={showModal} closeModal={closeModal} />
+            <ForgetPasswordModal
+              showModal={showModal}
+              closeModal={closeModal}
+            />
           </div>
         </div>
 
@@ -127,9 +129,12 @@ const LoginForm = () => {
       </form>
 
       <div className="mt-8 text-center">
-        <p className="text-sm text-gray-600 hover:text-red-600 transition-colors duration-300">
+        <Link
+          to="/signup"
+          className="text-red-600 text-base underline xl:text-[18px] lg:text-[14px] md:text-[12px]"
+        >
           CREATE AN ACCOUNT
-        </p>
+        </Link>
       </div>
     </div>
   );

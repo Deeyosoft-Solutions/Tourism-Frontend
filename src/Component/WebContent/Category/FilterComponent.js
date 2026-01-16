@@ -1,303 +1,164 @@
-import React, { useState } from "react";
-import { BiFilterAlt, BiChevronDown } from "react-icons/bi";
-import { AiFillStar } from "react-icons/ai";
-import products from "./../../../Data/Products";
+import { BiX } from "react-icons/bi";
 
 const FilterComponent = ({
-  subcategories,
   allTags,
   filters,
+  maxPrice,
   setFilters,
   handleFilterApply,
+  isOpen,
+  onClose,
 }) => {
-  const [openSections, setOpenSections] = useState({
-    categories: true,
-    priceRange: true,
-    rating: true,
-    tags: true,
-  });
-
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // State to toggle filter on small screens
-
-  const minPrice = Math.min(...products.map((product) => product.price));
-  const maxPrice = Math.max(...products.map((product) => product.price));
-
-  const toggleSection = (section) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  const cleanTags = (tags) => {
-    // If it's already an array, return it
-    if (Array.isArray(tags)) return tags;
-
-    // Remove brackets and quotes, then split by comma
-    return tags
-      .replace(/[\]"]+/g, "") // Remove brackets and quotes
-      .split(",") // Split by comma
-      .map((tag) => tag.trim()) // Trim whitespace
-      .filter((tag) => tag.length > 0); // Remove empty tags
-  };
+  if (!isOpen) return null;
 
   return (
-    <div className="w-full px-2 py-2">
-      {/* Filter Toggle Button for Small Screens */}
-      <button
-        onClick={() => setIsFilterOpen(!isFilterOpen)}
-        className="md:hidden flex items-center justify-center w-full px-4 py-2 bg-red-600 text-white text-base font-medium rounded-full mb-4"
-      >
-        {isFilterOpen ? "Hide Filters" : "Show Filters"}{" "}
-        <BiFilterAlt size={18} className="ml-2" />
-      </button>
-      <button className="hidden lg:flex items-center font-poppins justify-center px-4 py-2 bg-red-600 text-white text-base font-medium rounded-full mb-4">
-        Filter <BiFilterAlt size={18} className="ml-2" />
-      </button>
-
-      {/* Filter Content */}
-      <div
-        className={`${
-          isFilterOpen ? "block" : "hidden"
-        } md:block transition-all duration-300 ease-in-out`}
-      >
-        {/* Categories */}
-        <div className="mb-6">
+    <div className="bg-gray-100 border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-700">
+            Filter Products
+          </h2>
           <button
-            onClick={() => toggleSection("categories")}
-            className="flex items-center justify-between w-full mb-3"
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-200"
           >
-            <h3 className="font-medium font-poppins text-gray-900">
-              All Categories
-            </h3>
-            <BiChevronDown
-              className={`transform transition-transform duration-200 ${
-                openSections.categories ? "rotate-180" : ""
-              }`}
-              size={20}
-            />
+            <BiX size={22} />
           </button>
-          <div
-            className={`overflow-hidden font-poppins transition-all duration-300 ease-in-out ${
-              openSections.categories ? "max-h-96" : "max-h-0"
-            }`}
-          >
-            {subcategories.map((subcat) => (
-              <label
-                key={subcat}
-                className="flex items-center space-x-2 mb-2 text-gray-600"
-              >
-                <input
-                  type="radio"
-                  name="selectedSubcategory"
-                  value={subcat}
-                  checked={filters.selectedSubCategories.includes(subcat)}
-                  onChange={() =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      selectedSubCategories:
-                        prev.selectedSubCategories.includes(subcat)
-                          ? []
-                          : [subcat],
-                    }))
-                  }
-                  className="text-red-600 focus:ring-red-500"
-                />
-                <span className="text-sm">{subcat}</span>
-                <span className="text-gray-400 text-xs ml-auto">(154)</span>
-              </label>
-            ))}
-          </div>
         </div>
 
-        {/* Price Range */}
-        <div className="mb-6 font-poppins">
-          <button
-            onClick={() => toggleSection("priceRange")}
-            className="flex items-center justify-between w-full mb-3"
-          >
-            <h3 className="font-medium text-gray-900">Price</h3>
-            <BiChevronDown
-              className={`transform transition-transform duration-200 ${
-                openSections.priceRange ? "rotate-180" : ""
-              }`}
-              size={20}
-            />
-          </button>
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              openSections.priceRange ? "max-h-24" : "max-h-0"
-            }`}
-          >
-            <style>
-              {`
-                input[type="range"] {
-                  appearance: none;
-                  width: 100%;
-                  height: 6px;
-                  background: #1e90ff;
-                  border-radius: 4px;
-                  outline: none;
-                }
-
-                input[type="range"]::-webkit-slider-thumb {
-                  appearance: none;
-                  width: 14px;
-                  height: 14px;
-                  background: white;
-                  border: 2px solid #007bff;
-                  border-radius: 50%;
-                  cursor: pointer;
-                  position: center;
-                  margin-top: -5px;
-                }
-
-                input[type="range"]::-moz-range-thumb {
-                  width: 14px;
-                  height: 14px;
-                  background: white;
-                  border: 2px solid #007bff;
-                  border-radius: 50%;
-                  cursor: pointer;
-                }
-
-                input[type="range"]::-webkit-slider-runnable-track {
-                  background: #1e90ff;
-                  height: 4px;
-                  border-radius: 4px;
-                }
-
-                input[type="range"]::-moz-range-track {
-                  background: #1e90ff;
-                  height: 2px;
-                  border-radius: 4px;
-                }
-              `}
-            </style>
+        {/* FILTER ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          {/* Min Price */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-500">Min Price</span>
             <input
-              type="range"
-              min={minPrice}
-              max={maxPrice}
-              value={filters.priceRange[1]}
+              type="number"
+              placeholder="Min Price"
+              value={filters.minPrice}
               onChange={(e) =>
                 setFilters((prev) => ({
                   ...prev,
-                  priceRange: [minPrice, Number(e.target.value)],
+                  minPrice: Number(e.target.value),
                 }))
               }
-              className="w-full"
+              className="px-4 py-2 rounded-md border border-gray-300 text-sm bg-white"
             />
-            <div className="flex justify-between text-sm mt-2 text-gray-600">
-              <span>Price: ${minPrice}</span>
-              <span>To</span>
-              <span>${filters.priceRange[1]}</span>
-            </div>
           </div>
+
+          {/* Max Price */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-500">Max Price</span>
+            <input
+              type="number"
+              placeholder="Max Price"
+              value={filters.maxPrice}
+              max={maxPrice}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  maxPrice: Number(e.target.value),
+                }))
+              }
+              className="px-4 py-2 rounded-md border border-gray-300 text-sm bg-white"
+            />
+          </div>
+
+          {/* Rating */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-500">Rating</span>
+            <select
+              value={filters.minRating}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  minRating: Number(e.target.value),
+                }))
+              }
+              className="px-4 py-2 rounded-md border border-gray-300 text-sm bg-white"
+            >
+              <option value={0}>Any Rating</option>
+              <option value={1}>1★ & up</option>
+              <option value={2}>2★ & up</option>
+              <option value={3}>3★ & up</option>
+              <option value={4}>4★ & up</option>
+              <option value={5}>5★</option>
+            </select>
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-500">Tags</span>
+            <select
+              value=""
+              onChange={(e) => {
+                const value = e.target.value;
+                if (!value) return;
+
+                setFilters((prev) => ({
+                  ...prev,
+                  selectedTags: prev.selectedTags.includes(value)
+                    ? prev.selectedTags
+                    : [...prev.selectedTags, value],
+                }));
+              }}
+              className="px-4 py-2 rounded-md border border-gray-300 text-sm bg-white"
+            >
+              <option value="">Select Tag</option>
+              {allTags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* In Stock */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-500">In Stock</span>
+            <label className="flex items-center gap-2 bg-white px-4 py-2 rounded-md border border-gray-300 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.inStock}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    inStock: e.target.checked,
+                  }))
+                }
+              />
+              In Stock
+            </label>
+          </div>
+
+          {/* Apply */}
+          <button
+            onClick={handleFilterApply}
+            className="bg-blue-600 text-white mt-6 h-8 rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700"
+          >
+            Apply
+          </button>
         </div>
 
-        {/* Rating */}
-        <div className="mb-6 font-poppins">
-          <button
-            onClick={() => toggleSection("rating")}
-            className="flex items-center justify-between w-full mb-3"
-          >
-            <h3 className="font-medium text-gray-900">Rating</h3>
-            <BiChevronDown
-              className={`transform transition-transform duration-200 ${
-                openSections.rating ? "rotate-180" : ""
-              }`}
-              size={20}
-            />
-          </button>
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              openSections.rating ? "max-h-48" : "max-h-0"
-            }`}
-          >
-            {[5, 4, 3, 2, 1].map((rating) => (
-              <label key={rating} className="flex items-center mb-2">
-                <input
-                  type="checkbox"
-                  name="minRating"
-                  checked={filters.minRating === rating}
-                  onChange={() =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      minRating: prev.minRating === rating ? null : rating,
-                    }))
-                  }
-                  className="text-red-600 focus:ring-red-500"
-                />
-                <div className="flex items-center ml-2">
-                  {[...Array(5)].map((_, i) => (
-                    <AiFillStar
-                      key={i}
-                      size={16}
-                      className={
-                        i < rating ? "text-yellow-400" : "text-gray-200"
-                      }
-                    />
-                  ))}
-                  <span className="ml-1 text-sm text-gray-600">
-                    {rating}.0 & up
-                  </span>
-                </div>
-              </label>
+        {/* Selected Tags (Optional visual feedback) */}
+        {filters.selectedTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {filters.selectedTags.map((tag) => (
+              <span
+                key={tag}
+                className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full cursor-pointer"
+                onClick={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    selectedTags: prev.selectedTags.filter((t) => t !== tag),
+                  }))
+                }
+              >
+                {tag} ✕
+              </span>
             ))}
           </div>
-        </div>
-
-        {/* Tags */}
-        <div className="mb-6 font-poppins">
-          <button
-            onClick={() => toggleSection("tags")}
-            className="flex items-center justify-between w-full mb-3"
-          >
-            <h3 className="font-medium text-gray-900">Popular Tag</h3>
-            <BiChevronDown
-              className={`transform transition-transform duration-200 ${
-                openSections.tags ? "rotate-180" : ""
-              }`}
-              size={20}
-            />
-          </button>
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              openSections.tags ? "max-h-96" : "max-h-0"
-            }`}
-          >
-            <div className="flex flex-wrap gap-2">
-              {cleanTags(allTags).map((tag) => (
-                <button
-                  key={tag}
-                  className={`px-3 py-1 rounded-full text-xs ${
-                    filters.selectedTags.includes(tag)
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                  onClick={() => {
-                    setFilters((prev) => ({
-                      ...prev,
-                      selectedTags: prev.selectedTags.includes(tag)
-                        ? prev.selectedTags.filter((t) => t !== tag)
-                        : [...prev.selectedTags, tag],
-                    }));
-                  }}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Apply Filters Button */}
-        <button
-          onClick={handleFilterApply}
-          className="mt-4 w-full bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 py-2 rounded"
-        >
-          Apply Filters
-        </button>
+        )}
       </div>
     </div>
   );

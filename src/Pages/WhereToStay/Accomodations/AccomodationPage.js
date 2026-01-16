@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ChevronRight, X, Trash2, Users, Bed, Bath } from "lucide-react";
 import { useGetAccommodationBySlugQuery } from "../../../Services/accomodationApiSlice";
@@ -220,13 +220,21 @@ const AccommodationPage = () => {
     checkOutUntil,
     houseRules,
   } = data;
-  const rooms = roomsData?.data || [];
+  
+  // ✅ Filter rooms to show only published ones
+  const allRooms = roomsData?.data || [];
+  const rooms = allRooms.filter(room => room.published === true);
 
   const handleNextStep = () => {
     setShowModal(true);
   };
 
   const handleRoomSelect = (room) => {
+    // ✅ Check if room is active before allowing selection
+    if (room.status !== 'active') {
+      return; // Don't allow selection if room is inactive or under maintenance
+    }
+    
     const existingRoom = selectedRooms.find(r => r.id === room.id);
     
     if (existingRoom) {
@@ -433,76 +441,109 @@ const AccommodationPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rooms.map((room) => (
-                <div
-                  key={room.id}
-                  className={`border rounded-xl overflow-hidden bg-white hover:shadow-md transition cursor-pointer ${
-                    isRoomSelected(room.id) ? "ring-2 ring-red-500" : ""
-                  }`}
-                  onClick={() => handleRoomSelect(room)}
-                >
-                  {/* Image */}
-                  <img
-                    src={
-                      room.images?.[0]
-                        ? `${API_BASE_URL}${room.images[0]}`
-                        : "/public/assets/Images/house0.jpg"
-                    }
-                    alt={room.name}
-                    className="w-full h-48 object-cover"
-                  />
-
-                  <div className="p-4 space-y-3">
-                    {/* Title & Price */}
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-lg">{room.name}</h3>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          NPR {room.basePrice.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-gray-500">per night</p>
-                      </div>
-                    </div>
-
-                    {/* Room Meta */}
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Users color="#000" size={18} /> {room.capacity}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Bed color="#000" size={18} /> {room.beds}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Bath color="#000" size={18} /> {room.bathrooms}
-                      </span>
-                    </div>
-
-                    {/* Amenities Pills */}
-                    <div className="flex flex-wrap gap-2">
-                      {room.amenities?.slice(0, 3).map((a, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full"
-                        >
-                          {a}
-                        </span>
-                      ))}
-                      {room.amenities?.length > 3 && (
-                        <span className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
-                          +{room.amenities.length - 3}
-                        </span>
+              {rooms.map((room) => {
+                const isInactive = room.status === 'inactive';
+                const isMaintenance = room.status === 'maintenance';
+                const isNotActive = isInactive || isMaintenance;
+                const isSelected = isRoomSelected(room.id);
+                
+                return (
+                  <div
+                    key={room.id}
+                    className={`border rounded-xl overflow-hidden bg-white transition ${
+                      isNotActive 
+                        ? 'opacity-60 cursor-not-allowed' 
+                        : 'hover:shadow-md cursor-pointer'
+                    } ${
+                      isSelected ? "ring-2 ring-red-500" : ""
+                    }`}
+                    onClick={() => handleRoomSelect(room)}
+                  >
+                    {/* Image */}
+                    <div className="relative">
+                      <img
+                        src={
+                          room.images?.[0]
+                            ? `${API_BASE_URL}${room.images[0]}`
+                            : "/public/assets/Images/house0.jpg"
+                        }
+                        alt={room.name}
+                        className="w-full h-48 object-cover"
+                      />
+                      
+                      {/* Status Badge */}
+                      {isNotActive && (
+                        <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                          {isMaintenance ? 'Under Maintenance' : 'Unavailable'}
+                        </div>
                       )}
                     </div>
 
-                    {/* Availability */}
-                    <div className="pt-3 border-t">
-                      <p className="text-sm text-gray-500">
-                        {room.totalUnits || 0} available
-                      </p>
+                    <div className="p-4 space-y-3">
+                      {/* Title & Price */}
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-semibold text-lg">{room.name}</h3>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">
+                            NPR {room.basePrice.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500">per night</p>
+                        </div>
+                      </div>
+
+                      {/* Room Meta */}
+                      <div className="flex gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <Users color="#000" size={18} /> {room.capacity}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Bed color="#000" size={18} /> {room.beds}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Bath color="#000" size={18} /> {room.bathrooms}
+                        </span>
+                      </div>
+
+                      {/* Status Message */}
+                      {isNotActive && (
+                        <div className={`text-sm font-medium p-2 rounded ${
+                          isMaintenance 
+                            ? 'bg-yellow-50 text-yellow-700' 
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {isMaintenance 
+                            ? '🔧 This room is currently under maintenance and cannot be booked.' 
+                            : '⚠️ This room is currently unavailable for booking.'}
+                        </div>
+                      )}
+
+                      {/* Amenities Pills */}
+                      <div className="flex flex-wrap gap-2">
+                        {room.amenities?.slice(0, 3).map((a, i) => (
+                          <span
+                            key={i}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full"
+                          >
+                            {a}
+                          </span>
+                        ))}
+                        {room.amenities?.length > 3 && (
+                          <span className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
+                            +{room.amenities.length - 3}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Availability */}
+                      <div className="pt-3 border-t">
+                        <p className="text-sm text-gray-500">
+                          {room.totalUnits || 0} available
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
