@@ -36,7 +36,7 @@ const CategoryPage = () => {
   const [filteredProducts, setFilteredProducts] = useState(categoryProducts);
   const [filters, setFilters] = useState({
     minPrice: 0,
-    maxPrice: 1000,
+    maxPrice: 0,
     minRating: 0,
     selectedTags: [],
     inStock: false,
@@ -132,36 +132,42 @@ const CategoryPage = () => {
     navigate(`/localproducts/product/${product.slug}`);
   };
 
-  const handleFilterApply = () => {
+  useEffect(() => {
     let filtered = [...categoryProducts];
 
-    // ✅ Price filter
+    // Price
     filtered = filtered.filter(
-      (product) =>
-        Number(product.price) >= filters.minPrice &&
-        Number(product.price) <= filters.maxPrice
+      (p) =>
+        Number(p.price) >= filters.minPrice &&
+        Number(p.price) <= filters.maxPrice
     );
 
-    // ✅ Rating filter
+    // Rating
     filtered = filtered.filter(
-      (product) => (product.averageRating || 0) >= filters.minRating
+      (p) => (p.averageRating || 0) >= filters.minRating
     );
 
-    // ✅ Tags filter
+    // Tags
     if (filters.selectedTags.length > 0) {
-      filtered = filtered.filter((product) =>
-        (product.tags || []).some((tag) => filters.selectedTags.includes(tag))
+      filtered = filtered.filter((p) =>
+        (p.tags || []).some((tag) => filters.selectedTags.includes(tag))
       );
     }
 
-    // ✅ In stock filter
+    // In Stock
     if (filters.inStock) {
-      filtered = filtered.filter((product) => Number(product.stock) > 0);
+      filtered = filtered.filter((p) => Number(p.stock) > 0);
+    }
+
+    // Search
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
     setFilteredProducts(filtered);
-    setIsFilterOpen(false);
-  };
+  }, [filters, categoryProducts, searchQuery]);
 
   const handleSortChange = (sortType) => {
     let sortedProducts = [...filteredProducts];
@@ -259,7 +265,7 @@ const CategoryPage = () => {
             {/* Sort Dropdown */}
             <select
               onChange={(e) => handleSortChange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 font-medium cursor-pointer"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none bg-white text-gray-700 font-medium cursor-pointer"
             >
               <option value="">Newest</option>
               <option value="lowToHigh">Price: Low to High</option>
@@ -271,13 +277,11 @@ const CategoryPage = () => {
         </div>
       </div>
 
-      {/* Filter Panel - Expandable */}
       <FilterComponent
         isOpen={isFilterOpen}
         filters={filters}
         setFilters={setFilters}
         maxPrice={maxCategoryPrice}
-        handleFilterApply={handleFilterApply}
         allTags={allTags}
         onClose={() => setIsFilterOpen(false)}
       />

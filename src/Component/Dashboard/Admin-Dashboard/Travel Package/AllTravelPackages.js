@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   useGetTravelPackagesQuery,
@@ -9,7 +9,6 @@ import LoadingSpinner from "../../../LoadingSpinner";
 import PackagesListComponent from "./Comp/PackagesListComponent";
 import PackageDetailsComponent from "./Comp/Details/PackageDetailsComponent";
 import OverviewComponent from "./Comp/OverviewComponent";
-import { FaArrowLeft } from "react-icons/fa";
 import ErrorToast from "../../../ErrorToast";
 import SuccessToast from "../../../SuccessToast";
 import AllBookings from "./Comp/Travel Bookings/AllBookings";
@@ -27,6 +26,9 @@ const TravelPackagesDashboard = () => {
     type: "",
   });
 
+  // Track if this is the first render
+  const isFirstRender = useRef(true);
+
   const {
     data: response,
     isLoading,
@@ -43,6 +45,22 @@ const TravelPackagesDashboard = () => {
   const filteredPackages = packages.filter((pkg) =>
     pkg.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // ✅ FIX: Detect URL changes from sidebar and close details view
+  useEffect(() => {
+    // Skip on first render
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // When the view parameter changes (via sidebar navigation),
+    // automatically close the package details view
+    if (selectedPackage) {
+      setSelectedPackage(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]); // Only depend on view to detect sidebar navigation
 
   // Toggle departures
   const handleToggleDepartures = async (pkg, e) => {
@@ -130,21 +148,13 @@ const TravelPackagesDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {selectedPackage ? (
-          <>
-            <button
-              onClick={() => setSelectedPackage(null)}
-              className="flex items-center gap-2 border border-gray-300 rounded-md mb-2 px-3 py-1.5 text-sm font-medium hover:bg-gray-100 transition"
-            >
-              <FaArrowLeft size={14} /> Go Back
-            </button>
-
-            <PackageDetailsComponent
-              selectedPackage={selectedPackage}
-              handleEdit={(pkg) => setSelectedPackage(pkg)}
-              handleToggleDepartures={handleToggleDepartures}
-              handleDelete={handleDelete}
-            />
-          </>
+          <PackageDetailsComponent
+            selectedPackage={selectedPackage}
+            onClose={() => setSelectedPackage(null)}
+            handleEdit={(pkg) => setSelectedPackage(pkg)}
+            handleToggleDepartures={handleToggleDepartures}
+            handleDelete={handleDelete}
+          />
         ) : view === "traveloverview" ? (
           <OverviewComponent
             packages={packages}

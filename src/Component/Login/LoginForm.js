@@ -1,45 +1,56 @@
 import { useState } from "react";
 import { useLoginMutation } from "../../Services/auth/authApiSlice";
-import { Link, useNavigate } from "react-router-dom"; // For navigation after login
-import { useDispatch } from "react-redux"; // For dispatching Redux actions
-import { setCredentials } from "../../Features/slice/authSlice"; // Corrected import for Redux action
+import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../../Features/slice/authSlice";
 import ForgetPasswordModal from "./ForgetPassword";
-// import { useFetchUserProfileQuery } from "../../Services/auth/userApiSlice";
 
 const LoginForm = () => {
   const [email, setemail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false); // For "Remember Me" functionality
+  const [rememberMe, setRememberMe] = useState(false);
+  const [localError, setLocalError] = useState(""); // Local error state
   const [login, { isLoading, isError, error }] = useLoginMutation();
-  const navigate = useNavigate(); // Hook for navigation
-  const dispatch = useDispatch(); // Hook for dispatching Redux actions
-  // const { data: profile } = useFetchUserProfileQuery(); // Fetch profile
+  const dispatch = useDispatch();
 
-  const [showModal, setShowModal] = useState(false); // State to control modal visibility
+  const [showModal, setShowModal] = useState(false);
 
   const openModal = () => {
-    setShowModal(true); // Open the modal when the button is clicked
+    setShowModal(true);
   };
 
   const closeModal = () => {
-    setShowModal(false); // Close the modal
+    setShowModal(false);
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLocalError(""); // Clear any previous errors
+    
     try {
       const credentials = { email, password };
-      const { accessToken, refreshToken } = await login(credentials).unwrap();
+      const result = await login(credentials).unwrap();
 
-      dispatch(setCredentials({ accessToken, refreshToken }));
+      // Only proceed if we actually got tokens back
+      if (result?.accessToken && result?.refreshToken) {
+        const { accessToken, refreshToken } = result;
+        
+        dispatch(setCredentials({ accessToken, refreshToken }));
 
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
 
-      navigate("/");
-      window.location.replace("/");
+        // Only navigate/reload on successful login
+        window.location.replace("/");
+      } else {
+        // If no tokens, something is wrong
+        setLocalError("Login failed. Please try again.");
+      }
     } catch (err) {
+      // Capture the error in local state to prevent it from disappearing
       console.error("Login failed:", err);
+      const errorMessage = err?.data?.message || err?.message || "Login failed. Please try again.";
+      setLocalError(errorMessage);
     }
   };
 
@@ -121,9 +132,9 @@ const LoginForm = () => {
           {isLoading ? "Logging in..." : "Log in"}
         </button>
 
-        {isError && (
+        {(isError || localError) && (
           <div className="mt-4 text-center text-red-600">
-            {error?.data?.message || "Login failed. Please try again."}
+            {localError || error?.data?.message || "Login failed. Please try again."}
           </div>
         )}
       </form>

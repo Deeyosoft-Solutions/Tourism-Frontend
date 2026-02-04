@@ -317,6 +317,7 @@ const ForAdminBookings = () => {
         <BookingDetailsView
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+          onRefetch={refetch}
         />
       ) : (
         <>

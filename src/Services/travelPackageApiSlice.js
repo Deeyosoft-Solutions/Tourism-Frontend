@@ -6,9 +6,22 @@ export const travelPackageApi = createApi({
   baseQuery,
   tagTypes: ["TravelPackage"],
   endpoints: (builder) => ({
-    // Get all travel packages
+    // Get all travel packages with optional filters
     getTravelPackages: builder.query({
-      query: () => "/travel-packages",
+      query: (params = {}) => {
+        // Build query string from params
+        const queryParams = new URLSearchParams();
+        
+        // Add all non-empty parameters
+        Object.keys(params).forEach((key) => {
+          if (params[key] !== "" && params[key] !== null && params[key] !== undefined) {
+            queryParams.append(key, params[key]);
+          }
+        });
+        
+        const queryString = queryParams.toString();
+        return `/travel-packages${queryString ? `?${queryString}` : ""}`;
+      },
       providesTags: ["TravelPackage"],
     }),
 

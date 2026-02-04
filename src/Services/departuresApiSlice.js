@@ -5,10 +5,12 @@ import { baseQuery } from './../Features/baseQuery';
 export const departuresApi = createApi({
   reducerPath: 'departuresApi',
   baseQuery,
+  tagTypes: ['Departures'],
   endpoints: (builder) => ({
     // GET all departures for a package
     getDepartures: builder.query({
       query: (slug) => `travel-packages/${slug}/departures`,
+      providesTags: ['Departures'],
     }),
 
     // CREATE a new departure for a package
@@ -18,15 +20,36 @@ export const departuresApi = createApi({
         method: 'POST',
         body: data,
       }),
+      invalidatesTags: ['Departures'],
+    }),
+
+    // CREATE bulk departures for a package
+    createBulkDepartures: builder.mutation({
+      query: ({ slug, data }) => ({
+        url: `travel-packages/${slug}/departures/bulk`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Departures'],
     }),
 
     // UPDATE an existing departure
     updateDeparture: builder.mutation({
-      query: ({ slug,id, data }) => ({
-        url: `travel-packages/${slug}/departures/${id}`, // or use slug dynamically
+      query: ({ slug, id, data }) => ({
+        url: `travel-packages/${slug}/departures/${id}`,
         method: 'PATCH',
         body: data,
       }),
+      invalidatesTags: ['Departures'],
+    }),
+
+    // DELETE a departure
+    deleteDeparture: builder.mutation({
+      query: ({ slug, id }) => ({
+        url: `travel-packages/${slug}/departures/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Departures'],
     }),
   }),
 });
@@ -34,5 +57,7 @@ export const departuresApi = createApi({
 export const {
   useGetDeparturesQuery,
   useCreateDepartureMutation,
-  useUpdateDepartureMutation, // ✅ added update mutation
+  useCreateBulkDeparturesMutation,
+  useUpdateDepartureMutation,
+  useDeleteDepartureMutation,
 } = departuresApi;

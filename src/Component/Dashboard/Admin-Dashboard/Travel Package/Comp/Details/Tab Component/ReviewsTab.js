@@ -2,6 +2,8 @@ import { useGetReviewsQuery } from "../../../../../../../Services/feedbackApiSli
 import ErrorMessage from "../../../../../../ErrorMessage";
 import LoadingSpinner from "../../../../../../LoadingSpinner";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const ReviewsTab = ({ packageData }) => {
   const targetId = packageData?.id;
   const targetType = "package";
@@ -17,12 +19,35 @@ const ReviewsTab = ({ packageData }) => {
     targetId,
   });
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "Invalid Date";
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+      
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      });
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Invalid Date";
+    }
+  };
+
   if (isLoading)
     return (
-      <p className="text-gray-600">
+      <div className="text-gray-600">
         <LoadingSpinner />
-      </p>
+      </div>
     );
+
   if (isError && error?.status !== 404)
     return (
       <ErrorMessage
@@ -30,6 +55,7 @@ const ReviewsTab = ({ packageData }) => {
         onRetry={refetch}
       />
     );
+
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold text-gray-800">Reviews</h3>
@@ -37,8 +63,15 @@ const ReviewsTab = ({ packageData }) => {
       {reviews.length > 0 ? (
         <ul className="space-y-4">
           {reviews.map((review) => {
-            const fullName = review.name || "Anonymous";
-            const avatar = review.image || "/default-avatar.png";
+            const fullName = review.user 
+              ? `${review.user.firstName} ${review.user.lastName}`.trim() 
+              : review.name || "Anonymous";
+
+            const avatar = review.user?.images
+              ? `${API_BASE_URL}${review.user.images}`
+              : review.image
+              ? `${API_BASE_URL}${review.image}`
+              : "/default-avatar.png";
 
             return (
               <li
@@ -50,11 +83,14 @@ const ReviewsTab = ({ packageData }) => {
                     src={avatar}
                     alt={fullName}
                     className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/default-avatar.png";
+                    }}
                   />
                   <div>
                     <p className="font-semibold text-gray-900">{fullName}</p>
                     <p className="text-gray-500 text-sm">
-                      {new Date(review.createdAt).toLocaleDateString()}
+                      {formatDate(review.createdAt)}
                     </p>
                   </div>
                   <div className="ml-auto text-yellow-500 font-bold">

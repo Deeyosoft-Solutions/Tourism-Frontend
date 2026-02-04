@@ -1,10 +1,19 @@
 // src/pages/LoginPage.js
-import React from "react";
+import { Link } from "react-router-dom";
+import { HiHome } from "react-icons/hi";
 import LoginForm from "../../Component/Login/LoginForm.js";
 
 const Login = () => {
   return (
     <div className="h-screen -m-4">
+      <Link
+        to="/"
+        className="fixed top-4 left-4 z-50 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition"
+      >
+        <HiHome className="text-xl" />
+        <span className="hidden sm:inline font-medium">Home</span>
+      </Link>
+
       <div className="h-full gap-2 lg:flex lg:flex-row justify-center items-center p-1">
         {/* Left Section (Tourism Info) */}
         <div className="p-2 text-center items-center w-full lg:w-1/2">

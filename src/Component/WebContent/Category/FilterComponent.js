@@ -1,15 +1,22 @@
-import { BiX } from "react-icons/bi";
-
 const FilterComponent = ({
   allTags,
   filters,
   maxPrice,
   setFilters,
-  handleFilterApply,
   isOpen,
-  onClose,
 }) => {
   if (!isOpen) return null;
+
+  // Function to reset all filters
+  const handleClearFilters = () => {
+    setFilters({
+      minPrice: "",
+      maxPrice: maxPrice,
+      minRating: 0,
+      selectedTags: [],
+      inStock: false,
+    });
+  };
 
   return (
     <div className="bg-gray-100 border-b border-gray-200">
@@ -19,12 +26,6 @@ const FilterComponent = ({
           <h2 className="text-sm font-semibold text-gray-700">
             Filter Products
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-200"
-          >
-            <BiX size={22} />
-          </button>
         </div>
 
         {/* FILTER ROW */}
@@ -130,17 +131,20 @@ const FilterComponent = ({
               In Stock
             </label>
           </div>
+        </div>
 
-          {/* Apply */}
+        {/* X Button now clears all filters */}
+        <div className="flex justify-end mt-2">
           <button
-            onClick={handleFilterApply}
-            className="bg-blue-600 text-white mt-6 h-8 rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700"
+            onClick={handleClearFilters}
+            className="px-4 py-1 rounded-lg border border-gray-600"
+            title="Clear All Filters"
           >
-            Apply
+            Clear All Filters
           </button>
         </div>
 
-        {/* Selected Tags (Optional visual feedback) */}
+        {/* Selected Tags */}
         {filters.selectedTags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
             {filters.selectedTags.map((tag) => (

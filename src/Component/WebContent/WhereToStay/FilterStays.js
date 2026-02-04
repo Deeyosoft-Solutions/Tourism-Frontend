@@ -76,13 +76,13 @@ export default function FilterComponent({
   const activeFiltersCount = Object.values(filters).filter((v) => v && v !== "all").length;
 
   return (
-    <div className="bg-gray-200 rounded-lg shadow-sm border border-gray-400 p-6 mb-8">
+    <div className="bg-gray-100 border rounded-lg border-gray-300 p-4 mb-4">
       <div className="flex flex-col lg:flex-row gap-4 mb-4">
         {/* Search Input */}
         <div className="flex-1 relative">
           <Input
             placeholder="Search stays, locations..."
-            className="pl-3"
+            className="pl-3 focus:ring-yellow-500"
             onChange={(e) => debouncedSearch(e.target.value)}
             value={filters.q}
           />
@@ -97,7 +97,7 @@ export default function FilterComponent({
           >
             Filters
             {activeFiltersCount > 0 && (
-              <span className="bg-blue-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center">
+              <span className="bg-red-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}

@@ -20,11 +20,13 @@ import { travelBookingsApi } from "../Services/travelBookings";
 import { roomsApi } from "../Services/accommodationRoomApiSlice";
 import { roomUnitsApi } from "../Services/acccommodationRoomUnitsApi";
 import { productOrderApi } from "../Services/productOrder";
+import { verificationApi } from "../Services/userVerification";
 
 export const store = configureStore({
   reducer: {
     [authApiSlice.reducerPath]: authApiSlice.reducer,
     [userApi.reducerPath]: userApi.reducer,
+    [verificationApi.reducerPath]: verificationApi.reducer,
     [resetPasswordApi.reducerPath]: resetPasswordApi.reducer,
     [protectedApi.reducerPath]: protectedApi.reducer,
     [siteSettingsApi.reducerPath]: siteSettingsApi.reducer,
@@ -67,6 +69,7 @@ export const store = configureStore({
       roomsApi.middleware,
       roomUnitsApi.middleware,
       productOrderApi.middleware,
+      verificationApi.middleware,
     ),
 });
 

@@ -1,14 +1,23 @@
 import { useNavigate } from "react-router-dom";
-import { useRegisterUserMutation } from "../../Services/registerApiSlice";
+import { useRegisterUserMutation, useLazyCheckEmailQuery } from "../../Services/registerApiSlice";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Upload, User } from "lucide-react";
+import ErrorToast from "../../Component/ErrorToast";
+import SuccessToast from './../../Component/SuccessToast';
+
 
 const RegisterPage = () => {
   const [registerUser, { isLoading }] = useRegisterUserMutation();
+  const [checkEmail, { data: emailCheckData, isFetching: isCheckingEmail }] = useLazyCheckEmailQuery();
   const navigate = useNavigate();
   const [imagePreview, setImagePreview] = useState(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [emailValidationStatus, setEmailValidationStatus] = useState(null);
+  const debounceTimer = useRef(null);
 
   const formik = useFormik({
     initialValues: {
@@ -47,14 +56,22 @@ const RegisterPage = () => {
     onSubmit: async (values, { setSubmitting, setStatus }) => {
       try {
         const { confirmPassword, ...apiPayload } = values;
-        const response = await registerUser(apiPayload).unwrap();
-        if (response.success) {
+        await registerUser(apiPayload).unwrap();
+        
+        // Show success toast regardless of response structure
+        setToastMessage("Registration successful! Redirecting to login...");
+        setShowSuccessToast(true);
+        
+        // Wait 2 seconds then navigate
+        setTimeout(() => {
           navigate("/login");
-        }
+        }, 2000);
       } catch (err) {
-        setStatus(
-          err.data?.message || "Registration failed. Please try again."
-        );
+        console.error("Registration error:", err);
+        const errorMessage = err?.data?.message || err?.message || "Registration failed. Please try again.";
+        setToastMessage(errorMessage);
+        setShowErrorToast(true);
+        setStatus(errorMessage);
       } finally {
         setSubmitting(false);
       }
@@ -78,8 +95,61 @@ const RegisterPage = () => {
     setImagePreview(null);
   };
 
+  // Debounced email validation
+  useEffect(() => {
+    const emailValue = formik.values.email;
+
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    if (!emailValue || !emailValue.includes("@")) {
+      setEmailValidationStatus(null);
+      return;
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      checkEmail(emailValue);
+    }, 500);
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [formik.values.email, checkEmail]);
+
+  // Update validation status based on API response
+  useEffect(() => {
+    if (emailCheckData !== undefined) {
+      setEmailValidationStatus(
+        emailCheckData.available || emailCheckData.success ? "valid" : "invalid"
+      );
+    }
+  }, [emailCheckData]);
+
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
+      {/* Toast Notifications */}
+      {(showSuccessToast || showErrorToast) && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          {showSuccessToast && (
+            <SuccessToast
+              message={toastMessage}
+              onClose={() => setShowSuccessToast(false)}
+              duration={2000}
+            />
+          )}
+          {showErrorToast && (
+            <ErrorToast
+              message={toastMessage}
+              onClose={() => setShowErrorToast(false)}
+              duration={5000}
+            />
+          )}
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
         {/* Header */}
         <div className="bg-gradient-to-r from-red-600 to-red-500 py-5 px-6 flex items-center justify-between">
@@ -98,6 +168,37 @@ const RegisterPage = () => {
               <p>{formik.status}</p>
             </div>
           )}
+
+          {/* Role Selection Section */}
+          <div className="mb-8">
+            <h2 className="text-gray-800 font-semibold text-lg mb-4 pb-2 border-b-2 border-red-100">
+              Account Type
+            </h2>
+            <div>
+              <label
+                className="block text-gray-700 text-sm font-bold mb-2"
+                htmlFor="role"
+              >
+                Select Role
+              </label>
+              <select
+                id="role"
+                name="role"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.role}
+                className="w-full px-4 py-2.5 border border-gray-300 bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all duration-150"
+              >
+                <option value="NORMAL">Normal User</option>
+                <option value="SELLER">Seller</option>
+                <option value="TRAVELAGENCY">Travel Agency</option>
+                <option value="HOST">Host</option>
+              </select>
+              <p className="text-gray-500 text-xs mt-2 italic">
+                You can skip selecting a specific role and remain as a Normal User if you don't need any special permissions.
+              </p>
+            </div>
+          </div>
 
           {/* Image Upload Section */}
           <div className="mb-8">
@@ -235,22 +336,48 @@ const RegisterPage = () => {
                 >
                   Email*
                 </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  value={formik.values.email}
-                  className={`w-full px-4 py-2.5 border ${
-                    formik.touched.email && formik.errors.email
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-red-400 focus:border-red-400"
-                  } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
-                />
+                <div className="relative">
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.email}
+                    className={`w-full px-4 py-2.5 border ${
+                      formik.touched.email && formik.errors.email
+                        ? "border-red-500 focus:ring-red-500"
+                        : emailValidationStatus === "invalid"
+                        ? "border-red-500 focus:ring-red-500"
+                        : emailValidationStatus === "valid"
+                        ? "border-green-500 focus:ring-green-500"
+                        : "border-gray-300 focus:ring-red-400 focus:border-red-400"
+                    } bg-gray-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all duration-150`}
+                  />
+                  {isCheckingEmail && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                    </div>
+                  )}
+                  {!isCheckingEmail && emailValidationStatus === "valid" && (
+                    <div className="absolute right-3 top-3 text-green-500">
+                      ✓
+                    </div>
+                  )}
+                </div>
                 {formik.touched.email && formik.errors.email && (
                   <p className="text-red-500 text-xs italic mt-1 font-medium">
                     {formik.errors.email}
+                  </p>
+                )}
+                {!isCheckingEmail && emailValidationStatus === "invalid" && (
+                  <p className="text-red-500 text-xs italic mt-1 font-medium">
+                    Email is already taken
+                  </p>
+                )}
+                {!isCheckingEmail && emailValidationStatus === "valid" && (
+                  <p className="text-green-600 text-xs italic mt-1 font-medium">
+                    Email is available
                   </p>
                 )}
               </div>

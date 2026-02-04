@@ -1,4 +1,3 @@
-import React from "react";
 
 const PackageDetailsTab = ({ packageData }) => {
   return (
@@ -9,9 +8,9 @@ const PackageDetailsTab = ({ packageData }) => {
 
       {/* Description */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <p className="text-gray-600">
+        <div className="text-gray-600">
           Description:<br /> <div dangerouslySetInnerHTML={{ __html: packageData.description }} />
-        </p>
+        </div>
       </div>
 
       {/* Basic Info */}
@@ -28,13 +27,6 @@ const PackageDetailsTab = ({ packageData }) => {
           <p className="font-semibold text-gray-900">
             {packageData.durationDays || 0} Days /{" "}
             {packageData.durationNights || 0} Nights
-          </p>
-        </div>
-
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <p className="text-sm text-gray-500">Capacity</p>
-          <p className="font-semibold text-gray-900">
-            {packageData.capacityTotal || 0} People
           </p>
         </div>
       </div>

@@ -14,7 +14,13 @@ export const registerApiSlice = createApi({
         headers: { "Content-Type": "application/json" },
       }),
     }),
+    checkEmail: builder.query({
+      query: (email) => ({
+        url: `/Auth/check-email?email=${encodeURIComponent(email)}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useRegisterUserMutation } = registerApiSlice;
+export const { useRegisterUserMutation, useLazyCheckEmailQuery } = registerApiSlice;

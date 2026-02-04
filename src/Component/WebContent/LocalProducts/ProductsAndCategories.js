@@ -17,6 +17,7 @@ const LocalProductPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(8);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("Newest");
 
   const navigate = useNavigate();
 
@@ -49,13 +50,32 @@ const LocalProductPage = () => {
     navigate(`/localproducts/product/${product.slug}`);
   const products = useMemo(() => productsData?.data || [], [productsData]);
 
-  // Filtered products for search
+  const sortedProducts = useMemo(() => {
+    if (!products) return [];
+
+    let sorted = [...products];
+
+    if (sortOrder === "Newest") {
+      sorted.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } else if (sortOrder === "Oldest") {
+      sorted.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+    }
+
+    return sorted;
+  }, [products, sortOrder]);
+
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return [];
-    return products.filter((p) =>
+    return sortedProducts.filter((p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, products]);
+  }, [searchTerm, sortedProducts]);
 
   useEffect(() => {
     const getVisibleCategoryItems = () => {
@@ -95,63 +115,71 @@ const LocalProductPage = () => {
   return (
     <div className="p-4 xl:mx-44 lg:mx-32 md:mx-20 mx-2">
       {/* Search Bar */}
-      <div className="relative flex items-center w-full bg-gray-200 gap-2 rounded-md border border-gray-300 p-3 mb-6">
-        <div className="w-full flex items-center bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          {/* Left Search Icon */}
-          <div className="flex items-center justify-center px-4">
-            <MdSearch size={20} className="text-gray-400" />
+      <div className="relative w-full gap-2 flex flex-col lg:flex-row mb-4">
+        {/* Search + Icon */}
+        <div className="relative w-full">
+          <div className="w-full flex items-center border border-gray-300 rounded-md shadow-sm gap-1 overflow-hidden bg-white">
+            {/* Left Search Icon */}
+            <div className="flex items-center justify-center rounded-full p-2">
+              <MdSearch size={20} className="text-gray-400" />
+            </div>
+
+            {/* Input */}
+            <input
+              type="text"
+              placeholder="Search Products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-grow px-3 py-2 text-gray-700 placeholder-gray-400 focus:outline-none"
+            />
           </div>
 
-          {/* Input */}
-          <input
-            type="text"
-            placeholder="Search Products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow py-2 text-gray-700 focus:outline-none placeholder-gray-400"
-          />
-        </div>
-        <select className="py-2 px-4 border-l border-gray-200 rounded-md text-gray-600 text-sm focus:outline-none">
-          <option>Newest</option>
-          <option>Oldest</option>
-        </select>
-
-        {/* Floating Search Results */}
-        {searchTerm && (
-          <div
-            className="absolute left-0 right-0 mt-2 w-full bg-white rounded-xl shadow-lg overflow-y-auto border border-gray-200 z-50"
-            style={{ maxHeight: "280px" }}
-          >
-            {productsLoading ? (
-              <div className="flex justify-center p-4">
-                <LoadingSpinner />
-              </div>
-            ) : filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  onClick={() => handleProductClick(product)}
-                  className="flex items-center gap-3 py-2 px-4 cursor-pointer hover:bg-gray-50 transition-all border-b last:border-none"
-                >
-                  {product.images?.[0] && (
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-12 h-12 object-cover rounded-lg"
-                    />
-                  )}
-                  <span className="font-medium text-gray-800">
-                    {product.name}
-                  </span>
+          {/* Floating Search Results */}
+          {searchTerm && (
+            <div
+              className="absolute top-full left-0 right-0 mt-1 w-full bg-white rounded-xl shadow-lg overflow-y-auto border border-gray-200 z-50"
+              style={{ maxHeight: "280px" }}
+            >
+              {productsLoading ? (
+                <div className="flex justify-center p-4">
+                  <LoadingSpinner />
                 </div>
-              ))
-            ) : (
-              <p className="p-4 text-gray-500 text-center">
-                No products found.
-              </p>
-            )}
-          </div>
-        )}
+              ) : filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => handleProductClick(product)}
+                    className="flex items-center gap-3 py-2 px-4 cursor-pointer hover:bg-gray-50 transition-all border-b last:border-none"
+                  >
+                    {product.images?.[0] && (
+                      <img
+                        src={`${API_BASE_URL}${product.images[0]}`}
+                        alt={product.name}
+                        className="w-12 h-12 object-cover rounded-lg"
+                      />
+                    )}
+                    <span className="font-medium text-gray-800">
+                      {product.name}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="p-4 text-gray-500 text-center">
+                  No products found.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+          className="py-2 px-4 border border-gray-300 rounded-md text-gray-600 text-sm focus:outline-none w-full lg:w-auto"
+        >
+          <option value="Newest">Newest</option>
+          <option value="Oldest">Oldest</option>
+        </select>
       </div>
 
       {/* Product Categories Section */}

@@ -1,4 +1,4 @@
-import { FaClock } from "react-icons/fa";
+import { FaClock, FaFileAlt } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../Features/slice/authSlice";
@@ -45,7 +45,9 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
   const activeType = searchParams.get("type");
   // const activeRoom = searchParams.get("room");
 
-  const activeTravelPackageView = searchParams.get("view");
+  // Travel Packages - using same query param 'view'
+  const currentView = searchParams.get("view");
+
   const isAccomodationsActive =
     location.pathname === "/dashboard/accomodations";
   const isTravelActive = location.pathname === "/dashboard/travelpackages";
@@ -82,6 +84,24 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
           >
             <FaClock className="text-lg" /> Overview
           </NavLink>
+
+          {(isSeller || isHost || isTravelAgency) && (
+            <NavLink
+              to="/dashboard/documentation"
+              className={({ isActive }) => getLinkClasses(isActive)}
+            >
+              <FaFileAlt className="text-lg" /> Documentation
+            </NavLink>
+          )}
+
+          {isAdmin && (
+            <NavLink
+              to="/dashboard/user-management"
+              className={({ isActive }) => getLinkClasses(isActive)}
+            >
+              User Management
+            </NavLink>
+          )}
 
           {isAdmin && (
             <NavLink
@@ -139,7 +159,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                         navigate(
                           sub === "stays"
                             ? `/dashboard/accomodations?view=stays&stay=all`
-                            : `/dashboard/accomodations?view=${sub}`
+                            : `/dashboard/accomodations?view=${sub}`,
                         )
                       }
                       className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
@@ -157,7 +177,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                         <button
                           onClick={() =>
                             navigate(
-                              `/dashboard/accomodations?view=stays&stay=all`
+                              `/dashboard/accomodations?view=stays&stay=all`,
                             )
                           }
                           className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
@@ -173,7 +193,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
                           <button
                             onClick={() =>
                               navigate(
-                                `/dashboard/accomodations?view=stays&type=true`
+                                `/dashboard/accomodations?view=stays&type=true`,
                               )
                             }
                             className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
@@ -205,27 +225,29 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
 
               {/* Submenu */}
               <div className="mx-2 my-3 flex flex-col space-y-1">
-                {["traveloverview", "packages", "travelbookings"].map(
-                  (sub) => {
-                    const isActiveSub = activeTravelPackageView === sub;
+                {["traveloverview", "packages", "travelbookings"].map((sub) => {
+                  const isActiveSub = isTravelActive && currentView === sub;
 
-                    return (
-                      <button
-                        key={sub}
-                        onClick={() =>
-                          navigate(`/dashboard/travelpackages?view=${sub}`)
-                        }
-                        className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
-                          isActiveSub
-                            ? "text-red-500 font-medium"
-                            : "text-gray-600 hover:text-red-500"
-                        }`}
-                      >
-                        {sub.charAt(0).toUpperCase() + sub.slice(1)}
-                      </button>
-                    );
-                  }
-                )}
+                  return (
+                    <button
+                      key={sub}
+                      onClick={() =>
+                        navigate(`/dashboard/travelpackages?view=${sub}`)
+                      }
+                      className={`py-2 text-center mx-2 bg-slate-200 text-sm rounded-md transition-colors w-full ${
+                        isActiveSub
+                          ? "text-red-500 font-medium"
+                          : "text-gray-600 hover:text-red-500"
+                      }`}
+                    >
+                      {sub === "traveloverview"
+                        ? "Overview"
+                        : sub === "travelbookings"
+                          ? "Bookings"
+                          : sub.charAt(0).toUpperCase() + sub.slice(1)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

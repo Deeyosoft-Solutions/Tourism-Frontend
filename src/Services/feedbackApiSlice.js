@@ -8,8 +8,7 @@ export const feedbackApi = createApi({
   endpoints: (builder) => ({
     // GET: Fetch reviews for a specific package
     getReviews: builder.query({
-      query: ({ targetType, targetId }) =>
-        `/${targetType}/${targetId}/reviews`,
+      query: ({ targetType, targetId }) => `/${targetType}/${targetId}/reviews`,
       transformResponse: (response) => {
         if (!Array.isArray(response)) return [];
         return response.map((review) => ({
@@ -19,6 +18,8 @@ export const feedbackApi = createApi({
           comment: review.comment,
           image: review.user.images,
           userId: review.user.id,
+          createdAt: review.createdAt, 
+          updatedAt: review.updatedAt,
         }));
       },
       providesTags: ["Reviews"],

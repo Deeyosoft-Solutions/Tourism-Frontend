@@ -1,6 +1,11 @@
 import { FaArrowLeft, FaUser, FaCalendar, FaHome, FaDollarSign, FaInfoCircle } from "react-icons/fa";
 import { useGetUserByIdQuery } from "../../../../../Services/userApiSlice";
 import { useGetAccommodationsQuery } from "../../../../../Services/accomodationApiSlice";
+import { 
+  useCancelRoomBookingMutation,
+  useUpdateRoomBookingStatusMutation 
+} from "../../../../../Services/accommodationBooking";
+import { useState } from "react";
 
 /* -----------------------------
    Helpers
@@ -127,8 +132,11 @@ const CustomerDetails = ({ customerId }) => {
 /* -----------------------------
    Main Component
 ------------------------------ */
-const BookingDetailsView = ({ booking, onClose }) => {
+const BookingDetailsView = ({ booking, onClose, onRefetch }) => {
   const { data: accommodationsData } = useGetAccommodationsQuery();
+  const [cancelRoomBooking, { isLoading: isCancelling }] = useCancelRoomBookingMutation();
+  const [updateRoomBookingStatus, { isLoading: isUpdating }] = useUpdateRoomBookingStatusMutation();
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
   const accommodationName = accommodationsData?.data?.find(
     (a) => a.id === booking.accommodationId
@@ -136,8 +144,77 @@ const BookingDetailsView = ({ booking, onClose }) => {
 
   const nights = calculateNights(booking.checkIn, booking.checkOut);
 
+  // Handle confirm booking
+  const handleConfirmBooking = async () => {
+    try {
+      await updateRoomBookingStatus({
+        id: booking.id,
+        status: 'confirmed'
+      }).unwrap();
+      if (onRefetch) {
+        onRefetch();
+      }
+      // Show success notification or toast here
+      alert('Booking confirmed successfully!');
+    } catch (error) {
+      console.error('Failed to confirm booking:', error);
+      alert('Failed to confirm booking. Please try again.');
+    }
+  };
+
+  // Handle cancel booking
+  const handleCancelBooking = async () => {
+    try {
+      await cancelRoomBooking({
+        id: booking.id,
+      }).unwrap();
+      if (onRefetch) {
+        onRefetch();
+      }
+      setShowCancelConfirm(false);
+      // Show success notification or toast here
+      alert('Booking cancelled successfully!');
+    } catch (error) {
+      console.error('Failed to cancel booking:', error);
+      alert('Failed to cancel booking. Please try again.');
+    }
+  };
+
+  // Handle print
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen p-6">
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Cancel Booking</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to cancel this booking? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                disabled={isCancelling}
+              >
+                No, Keep Booking
+              </button>
+              <button
+                onClick={handleCancelBooking}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isCancelling}
+              >
+                {isCancelling ? 'Cancelling...' : 'Yes, Cancel Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6">
         <button
@@ -402,20 +479,34 @@ const BookingDetailsView = ({ booking, onClose }) => {
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
             <div className="space-y-2">
-              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+              <button 
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                onClick={() => alert('Edit functionality to be implemented')}
+              >
                 Edit Booking
               </button>
               {booking.status?.toLowerCase() === 'pending' && (
-                <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
-                  Confirm Booking
+                <button 
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleConfirmBooking}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? 'Confirming...' : 'Confirm Booking'}
                 </button>
               )}
               {(booking.status?.toLowerCase() === 'confirmed' || booking.status?.toLowerCase() === 'pending') && (
-                <button className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium">
+                <button 
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowCancelConfirm(true)}
+                  disabled={isCancelling}
+                >
                   Cancel Booking
                 </button>
               )}
-              <button className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
+              <button 
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                onClick={handlePrint}
+              >
                 Print Details
               </button>
             </div>

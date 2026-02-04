@@ -11,6 +11,8 @@ import Profile from './../Pages/Profile/Profile';
 import AddToCart from "../Pages/Cart Page/AddToCart";
 import Accomodations from "../Pages/Dashboard/Host/Accomodations";
 import TravelPackages from "../Pages/Dashboard/Travel Agency/TravelPackages";
+import UserManagement from "../Pages/Dashboard/User Management/UserManagement";
+import UserDocumentation from "../Pages/Dashboard/User Management/UserDocumentation";
 
 function MainRoute() {
   return (
@@ -27,6 +29,8 @@ function MainRoute() {
       <Route path="dashboard" element={<ProtectedRoute />}>
         <Route index element={<DashboardHome />} />
         <Route path="home" element={<DashboardHome />} />
+        <Route path="user-management" element={<UserManagement />} />
+        <Route path="documentation" element={<UserDocumentation />} />
         <Route path="site-settings" element={<SiteSettings />} />
         <Route path="category" element={<Category />} />
         <Route path="product" element={<Product />} />

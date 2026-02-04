@@ -1,15 +1,13 @@
 import { useState, useMemo } from "react";
 import { Eye } from "lucide-react";
-
-import BookingDetailsView from "./BookingDetailsView";
+import TravelBookingDetailsView from "./BookingDetailsView";
 import { useGetTravelBookingsQuery } from "../../../../../../Services/travelBookings";
 import LoadingSpinner from "../../../../../LoadingSpinner";
 import ErrorMessage from "../../../../../ErrorMessage";
 import { FaCalendarAlt } from "react-icons/fa";
 
 const AllTravelBookings = () => {
-  const { data, isLoading, isError, error, refetch } = useGetTravelBookingsQuery();
-  const bookings = useMemo(() => data?.data || [], [data]);
+  const { data: bookings, isLoading, isError, error, refetch } = useGetTravelBookingsQuery();
 
   const [filters, setFilters] = useState({
     searchCode: "",
@@ -29,24 +27,40 @@ const AllTravelBookings = () => {
     });
   };
 
+  // Helper function to format status
+  const formatStatus = (status) => {
+    return status
+      .split('_')
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const filteredBookings = useMemo(() => {
+    if (!bookings) return [];
+    
     return bookings.filter((b) => {
       const matchesCode = b.id
         .toLowerCase()
         .includes(filters.searchCode.toLowerCase());
       const matchesStatus = filters.status ? b.status === filters.status : true;
+      
+      // Use departure.date instead of travelDate
+      const travelDate = b.departure?.date || b.travelDate;
       const matchesDateFrom = filters.travelDateFrom
-        ? new Date(b.travelDate) >= new Date(filters.travelDateFrom)
+        ? new Date(travelDate) >= new Date(filters.travelDateFrom)
         : true;
       const matchesDateTo = filters.travelDateTo
-        ? new Date(b.travelDate) <= new Date(filters.travelDateTo)
+        ? new Date(travelDate) <= new Date(filters.travelDateTo)
         : true;
 
       return matchesCode && matchesStatus && matchesDateFrom && matchesDateTo;
     });
   }, [bookings, filters]);
 
-  const uniqueStatuses = Array.from(new Set(bookings.map((b) => b.status)));
+  const uniqueStatuses = useMemo(() => {
+    if (!bookings) return [];
+    return Array.from(new Set(bookings.map((b) => b.status)));
+  }, [bookings]);
 
   if (isLoading)
     return (
@@ -58,9 +72,10 @@ const AllTravelBookings = () => {
   return (
     <div className="">
       {selectedBooking ? (
-        <BookingDetailsView
+        <TravelBookingDetailsView
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+          onRefetch={refetch}
         />
       ) : (
         <>
@@ -89,7 +104,7 @@ const AllTravelBookings = () => {
                 <option value="">All Statuses</option>
                 {uniqueStatuses.map((s) => (
                   <option key={s} value={s}>
-                    {s}
+                    {formatStatus(s)}
                   </option>
                 ))}
               </select>
@@ -98,8 +113,8 @@ const AllTravelBookings = () => {
               <div className="relative">
                 <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
-                  type="text"
-                  placeholder="From date(mm/dd/yyyy)"
+                  type="date"
+                  placeholder="From date"
                   value={filters.travelDateFrom}
                   onChange={(e) =>
                     setFilters({ ...filters, travelDateFrom: e.target.value })
@@ -112,8 +127,8 @@ const AllTravelBookings = () => {
               <div className="relative">
                 <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
-                  type="text"
-                  placeholder="To date(mm/dd/yyyy)"
+                  type="date"
+                  placeholder="To date"
                   value={filters.travelDateTo}
                   onChange={(e) =>
                     setFilters({ ...filters, travelDateTo: e.target.value })
@@ -160,41 +175,54 @@ const AllTravelBookings = () => {
                       </td>
                     </tr>
                   ) : filteredBookings.length > 0 ? (
-                    filteredBookings.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50 text-center">
-                        <td className="px-4 py-3">
-                          {new Date(b.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 font-medium">
-                          {b.packageName} <br /> ID: {b.id}
-                        </td>
-                        <td className="px-4 py-3">{b.travelDate}</td>
-                        <td className="px-4 py-3">{b.travellers}</td>
-                        <td className="px-4 py-3">{b.payment}</td>
-                        <td className="px-4 py-3 font-semibold">${b.total}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              b.status === "Confirmed"
-                                ? "bg-green-100 text-green-700"
-                                : b.status === "Pending Payment Verification"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}
-                          >
-                            {b.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 flex justify-center space-x-2">
-                          <button
-                            onClick={() => setSelectedBooking(b)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    filteredBookings.map((b) => {
+                      const travelDate = b.departure?.date || b.travelDate;
+                      const price = b.departure?.priceOverride || b.travelPackage?.price || '0';
+                      
+                      return (
+                        <tr key={b.id} className="hover:bg-gray-50 text-center">
+                          <td className="px-4 py-3">
+                            {new Date(b.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {b.travelPackage?.name || 'N/A'} <br /> 
+                            <span className="text-xs text-gray-500">ID: {b.id.slice(0, 8)}...</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {travelDate ? new Date(travelDate).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td className="px-4 py-3">{b.travellersCount}</td>
+                          <td className="px-4 py-3">{b.paymentMethod}</td>
+                          <td className="px-4 py-3 font-semibold">
+                            ${parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                b.status === "CONFIRMED"
+                                  ? "bg-green-100 text-green-700"
+                                  : b.status === "PENDING_PAYMENT_VERIFICATION"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : b.status === "PENDING_CONFIRMATION"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {formatStatus(b.status)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 flex justify-center space-x-2">
+                            <button
+                              onClick={() => setSelectedBooking(b)}
+                              className="text-blue-600 hover:text-blue-800"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td
