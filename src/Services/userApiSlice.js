@@ -30,7 +30,6 @@ export const userApi = createApi({
       },
     }),
 
-    // ✅ Fetch users (pagination + filters)
     getAllUsers: builder.query({
       query: ({ page = 1, limit = 10, role, sort, search }) => {
         const accessToken = localStorage.getItem("accessToken");
@@ -41,7 +40,11 @@ export const userApi = createApi({
           limit,
         });
 
-        if (role) params.append("role", role);
+        // Only append role if a single role is selected
+        if (role) {
+          params.append("role", role);
+        }
+
         if (sort) params.append("sort", sort);
         if (search) params.append("search", search);
 
@@ -71,6 +74,30 @@ export const userApi = createApi({
       },
     }),
 
+    getUserBookings: builder.query({
+      async queryFn(userId, _queryApi, _extraOptions, baseFetch) {
+        try {
+          const accessToken = await localStorage.getItem("accessToken");
+          if (!accessToken) throw new Error("Access token is required");
+
+          const result = await baseFetch({
+            url: `/user/${userId}/bookings`,
+            method: "GET",
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+
+          if (result.error) throw result.error;
+          return { data: result.data };
+        } catch (error) {
+          return { error };
+        }
+      },
+      transformResponse: (response) => response.data,
+      providesTags: (result, error, userId) => [
+        { type: "User", id: `${userId}-bookings` },
+      ],
+    }),
+
     getUserById: builder.query({
       query: (userId) => {
         const accessToken = localStorage.getItem("accessToken");
@@ -91,6 +118,7 @@ export const userApi = createApi({
 export const {
   useFetchUserProfileQuery,
   useGetUserByIdQuery,
+  useGetUserBookingsQuery,
   useGetAllUsersQuery,
   useUpdateUserByIdMutation,
 } = userApi;

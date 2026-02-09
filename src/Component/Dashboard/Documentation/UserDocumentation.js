@@ -65,7 +65,7 @@ const ImageModal = ({ src, alt, onClose }) => {
   );
 };
 
-const DocumentationPage = ({ userRole = "SELLER" }) => {
+const DocumentationPage = ({ userRole }) => {
   const [files, setFiles] = useState({});
   const [previews, setPreviews] = useState({});
   const [modalImage, setModalImage] = useState(null);

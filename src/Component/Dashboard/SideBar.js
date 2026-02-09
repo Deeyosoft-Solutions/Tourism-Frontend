@@ -87,7 +87,7 @@ const SideBar = ({ isSidebarOpen, onClose }) => {
 
           {(isSeller || isHost || isTravelAgency) && (
             <NavLink
-              to="/dashboard/documentation"
+              to="/dashboard/user-documentation"
               className={({ isActive }) => getLinkClasses(isActive)}
             >
               <FaFileAlt className="text-lg" /> Documentation

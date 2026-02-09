@@ -1,4 +1,4 @@
-import DocumentationPage from "../../../Component/Dashboard/Documentation/UserDocumentation";
+import UserVerification from "../../../Component/Dashboard/Documentation/UserVerification";
 import Header from "../../../Component/Dashboard/Header";
 import SideBar from "../../../Component/Dashboard/SideBar";
 import { useFetchUserProfileQuery } from "../../../Services/userApiSlice";
@@ -43,7 +43,7 @@ const UserDocumentation = () => {
       <SideBar />
       <div className="flex-1 px-4">
         <Header />
-        <DocumentationPage userRole={userProfile.role} />
+        <UserVerification userRole={userProfile.role} status={userProfile.verificationStatus} rejectionReason={userProfile.rejectionReason} />
       </div>
     </div>
   );

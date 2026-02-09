@@ -1,7 +1,17 @@
 import { useState, useMemo } from "react";
-import { FiFilter, FiX, FiUser, FiCalendar, FiDownload, FiFileText } from "react-icons/fi";
+import {
+  FiFilter,
+  FiX,
+  FiUser,
+  FiCalendar,
+  FiDownload,
+  FiFileText,
+} from "react-icons/fi";
 import PaginationControls from "../../../PaginationControls";
-import { useGetAllUsersQuery, useGetUserByIdQuery } from "../../../../Services/userApiSlice";
+import {
+  useGetAllUsersQuery,
+  useGetUserByIdQuery,
+} from "../../../../Services/userApiSlice";
 import { useUpdateVerificationStatusMutation } from "../../../../Services/userVerification";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -21,66 +31,83 @@ const UserContent = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [userToUpdate, setUserToUpdate] = useState(null);
 
-  // Build query parameters
-  const queryParams = {
-    page,
-    limit: 10,
-    sort,
-  };
-
-  // Add role filter - exclude NORMAL users
-  if (role) {
-    queryParams.role = role;
-  } else {
-    // If no specific role selected, exclude NORMAL users by default
-    queryParams.role = "SELLER,HOST,TRAVELAGENCY";
-  }
-
-  // Add search if present
-  if (search.trim()) {
-    queryParams.search = search.trim();
-  }
-
-  // Add status filter
-  if (status !== "ALL") {
-    queryParams.status = status;
-  }
-
+  // Backend query (only page & limit)
+  const queryParams = useMemo(() => ({ page, limit: 10 }), [page]);
   const { data, isLoading, refetch } = useGetAllUsersQuery(queryParams);
 
+  // Fetch all users for counts (exclude NORMAL)
   const { data: countsData, refetch: refetchCounts } = useGetAllUsersQuery({
     page: 1,
     limit: 1000,
-    role: "SELLER,HOST,TRAVELAGENCY", // Only fetch non-NORMAL users for counts
   });
 
-  const { data: userData, isLoading: isUserLoading } = useGetUserByIdQuery(selectedUserId, {
-    skip: !selectedUserId,
-  });
+  const { data: userData, isLoading: isUserLoading } = useGetUserByIdQuery(
+    selectedUserId,
+    { skip: !selectedUserId },
+  );
 
-  const [updateStatus, { isLoading: isUpdating }] = useUpdateVerificationStatusMutation();
+  const [updateStatus, { isLoading: isUpdating }] =
+    useUpdateVerificationStatusMutation();
 
-  const users = (data?.items || []).filter(user => user.role !== "NORMAL");
+  // =========================
+  // CLIENT-SIDE FILTERING
+  // =========================
+  const allUsers = (countsData?.items || []).filter(
+    (user) => user.role !== "NORMAL",
+  );
+
+  // Filtering
+  const filteredUsers = allUsers
+    .filter((user) => (role ? user.role === role : true))
+    .filter((user) =>
+      search
+        ? user.username.toLowerCase().includes(search.toLowerCase())
+        : true,
+    )
+    .filter((user) =>
+      status === "ALL" ? true : user.verificationStatus === status,
+    );
+
+  // Sorting
+  const sortedUsers = [...filteredUsers].sort((a, b) =>
+    sort === "newest"
+      ? new Date(b.createdAt) - new Date(a.createdAt)
+      : new Date(a.createdAt) - new Date(b.createdAt),
+  );
+
+  // Pagination
+  const usersPerPage = 10;
+  const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
+  const paginatedUsers = sortedUsers.slice(
+    (page - 1) * usersPerPage,
+    page * usersPerPage,
+  );
+
   const meta = data?.meta;
-
   const currentPage = meta?.currentPage || 1;
-  const totalPages = meta?.totalPages || 1;
 
+  // Status counts
   const statusCounts = useMemo(() => {
     const list = countsData?.items || [];
-    // Filter out NORMAL users
-    const filteredList = list.filter(u => u.role !== "NORMAL");
+    const filteredList = list.filter((u) => u.role !== "NORMAL");
     return {
       ALL: filteredList.length,
-      PENDING: filteredList.filter(u => u.verificationStatus === "PENDING").length,
-      APPROVED: filteredList.filter(u => u.verificationStatus === "APPROVED").length,
-      REJECTED: filteredList.filter(u => u.verificationStatus === "REJECTED").length,
+      PENDING: filteredList.filter((u) => u.verificationStatus === "PENDING")
+        .length,
+      SUBMITTED: filteredList.filter(
+        (u) => u.verificationStatus === "SUBMITTED",
+      ).length,
+      APPROVED: filteredList.filter((u) => u.verificationStatus === "APPROVED")
+        .length,
+      REJECTED: filteredList.filter((u) => u.verificationStatus === "REJECTED")
+        .length,
     };
   }, [countsData]);
 
   const statusTabs = [
     { key: "ALL", label: "All Users" },
     { key: "PENDING", label: "Pending Verification" },
+    { key: "SUBMITTED", label: "Submitted" },
     { key: "APPROVED", label: "Verified" },
     { key: "REJECTED", label: "Rejected" },
   ];
@@ -117,7 +144,7 @@ const UserContent = () => {
   const getDocuments = (userData) => {
     const docs = [];
     const verificationDocs = userData.verificationDocuments || {};
-    
+
     const docMap = {
       citizenshipFront: "Citizenship (Front)",
       citizenshipBack: "Citizenship (Back)",
@@ -128,7 +155,7 @@ const UserContent = () => {
       panCertificate: "PAN Certificate",
       travelAgencyLicense: "Travel Agency License",
       bankGuarantee: "Bank Guarantee",
-      officeAddressProof: "Office Address Proof"
+      officeAddressProof: "Office Address Proof",
     };
 
     Object.entries(docMap).forEach(([key, label]) => {
@@ -138,7 +165,11 @@ const UserContent = () => {
     });
 
     if (userData.paymentQrCode) {
-      docs.push({ key: "paymentQrCode", label: "Payment QR Code", url: userData.paymentQrCode });
+      docs.push({
+        key: "paymentQrCode",
+        label: "Payment QR Code",
+        url: userData.paymentQrCode,
+      });
     }
 
     return docs;
@@ -200,7 +231,7 @@ const UserContent = () => {
     <div className="mt-8 space-y-4">
       {/* STATUS TABS */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {statusTabs.map(tab => {
+        {statusTabs.map((tab) => {
           const isActive = status === tab.key;
 
           return (
@@ -239,12 +270,12 @@ const UserContent = () => {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input
           type="text"
-          placeholder="Search users..."
+          placeholder="Search by username..."
           className="w-full px-4 py-2 border rounded-md"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setPage(1);
+            setPage(1); // reset page
           }}
         />
 
@@ -259,6 +290,7 @@ const UserContent = () => {
 
       {showFilters && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md border">
+          {/* Role filter */}
           <div>
             <label className="block text-sm font-medium mb-1">Role</label>
             <select
@@ -270,12 +302,15 @@ const UserContent = () => {
               }}
             >
               <option value="">All Roles</option>
-              {roles.map(r => (
-                <option key={r} value={r}>{r}</option>
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
               ))}
             </select>
           </div>
 
+          {/* Sort by */}
           <div>
             <label className="block text-sm font-medium mb-1">Sort By</label>
             <select
@@ -314,14 +349,14 @@ const UserContent = () => {
                   Loading users...
                 </td>
               </tr>
-            ) : users.length === 0 ? (
+            ) : paginatedUsers.length === 0 ? (
               <tr>
                 <td colSpan="6" className="p-6 text-center text-gray-500">
                   No users found
                 </td>
               </tr>
             ) : (
-              users.map(user => (
+              paginatedUsers.map((user) => (
                 <tr key={user.id} className="border-t hover:bg-gray-50">
                   <td className="p-3">
                     <div className="flex items-center gap-3">
@@ -338,7 +373,9 @@ const UserContent = () => {
                       )}
                       <div>
                         <div className="font-medium">{getFullName(user)}</div>
-                        <div className="text-xs text-gray-500">@{user.username}</div>
+                        <div className="text-xs text-gray-500">
+                          @{user.username}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -349,7 +386,9 @@ const UserContent = () => {
                   </td>
 
                   <td className="p-3 text-center">
-                    <span className={`font-semibold ${getRoleColor(user.role)}`}>
+                    <span
+                      className={`font-semibold ${getRoleColor(user.role)}`}
+                    >
                       {user.role}
                     </span>
                   </td>
@@ -364,8 +403,8 @@ const UserContent = () => {
                         user.verificationStatus === "PENDING"
                           ? "bg-yellow-100 text-yellow-700"
                           : user.verificationStatus === "APPROVED"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
                       }`}
                     >
                       {user.verificationStatus}
@@ -411,6 +450,7 @@ const UserContent = () => {
         </table>
       </div>
 
+      {/* PAGINATION */}
       {totalPages > 1 && (
         <PaginationControls
           currentPage={currentPage}
@@ -427,7 +467,9 @@ const UserContent = () => {
           <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-orange-400 to-yellow-400 p-4 flex items-center justify-between rounded-t-lg">
-              <h2 className="text-lg font-semibold text-white">User Verification Details</h2>
+              <h2 className="text-lg font-semibold text-white">
+                User Verification Details
+              </h2>
               <button
                 onClick={handleCloseModal}
                 className="text-white hover:bg-white/20 rounded-full p-1"
@@ -455,8 +497,12 @@ const UserContent = () => {
                       </div>
                     )}
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{getFullName(userData)}</h3>
-                      <p className={`text-sm font-medium ${getRoleColor(userData.role)}`}>
+                      <h3 className="font-semibold text-lg">
+                        {getFullName(userData)}
+                      </h3>
+                      <p
+                        className={`text-sm font-medium ${getRoleColor(userData.role)}`}
+                      >
                         {userData.role}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -469,20 +515,29 @@ const UserContent = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <FiUser size={16} />
-                      <h4 className="font-semibold text-sm">Personal Information</h4>
+                      <h4 className="font-semibold text-sm">
+                        Personal Information
+                      </h4>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Date of Birth</span>
-                        <span className="font-medium">{userData.dateOfBirth || "10/12/1990"}</span>
+                        <span className="font-medium">
+                          {userData.dateOfBirth || "10/12/1990"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Gender</span>
-                        <span className="font-medium">{userData.gender || "Male"}</span>
+                        <span className="font-medium">
+                          {userData.gender || "Male"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Address</span>
-                        <span className="font-medium text-right">{userData.permanentAddress || "Pokhara Chitlai, Lalitpur"}</span>
+                        <span className="font-medium text-right">
+                          {userData.permanentAddress ||
+                            "Pokhara Chitlai, Lalitpur"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -490,9 +545,11 @@ const UserContent = () => {
                   {/* Uploaded Documents */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-sm">Uploaded Documents ({getDocuments(userData).length})</h4>
+                      <h4 className="font-semibold text-sm">
+                        Uploaded Documents ({getDocuments(userData).length})
+                      </h4>
                     </div>
-                    
+
                     <div className="space-y-2">
                       {getDocuments(userData).length === 0 ? (
                         <div className="text-center py-6 text-gray-500 text-sm">
@@ -500,14 +557,27 @@ const UserContent = () => {
                         </div>
                       ) : (
                         getDocuments(userData).map((doc, index) => (
-                          <div key={doc.key} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                          <div
+                            key={doc.key}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                          >
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-                                <FiFileText className="text-red-500" size={20} />
+                                <FiFileText
+                                  className="text-red-500"
+                                  size={20}
+                                />
                               </div>
                               <div>
-                                <p className="text-sm font-medium">{doc.label}</p>
-                                <p className="text-xs text-gray-500">Uploaded on {new Date(userData.createdAt).toLocaleDateString()}</p>
+                                <p className="text-sm font-medium">
+                                  {doc.label}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Uploaded on{" "}
+                                  {new Date(
+                                    userData.createdAt,
+                                  ).toLocaleDateString()}
+                                </p>
                               </div>
                             </div>
                             <a
@@ -529,39 +599,55 @@ const UserContent = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <FiCalendar size={16} />
-                      <h4 className="font-semibold text-sm">Registration & Activity</h4>
+                      <h4 className="font-semibold text-sm">
+                        Registration & Activity
+                      </h4>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600 mb-1">Joined Date</p>
+                        <p className="text-xs text-gray-600 mb-1">
+                          Joined Date
+                        </p>
                         <p className="text-sm font-medium">
-                          {new Date(userData.createdAt).toLocaleDateString('en-US', { 
-                            month: 'long', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
+                          {new Date(userData.createdAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(userData.createdAt).toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
+                          {new Date(userData.createdAt).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
                         </p>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3">
                         <p className="text-xs text-gray-600 mb-1">Last Login</p>
                         <p className="text-sm font-medium">
-                          {new Date(userData.updatedAt).toLocaleDateString('en-US', { 
-                            month: 'long', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
+                          {new Date(userData.updatedAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(userData.updatedAt).toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
+                          {new Date(userData.updatedAt).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
                         </p>
                       </div>
                     </div>
@@ -570,39 +656,60 @@ const UserContent = () => {
                   {/* Rejection Reason */}
                   {userData.rejectionReason && (
                     <div className="p-3 bg-red-50 border-l-4 border-red-500 rounded">
-                      <p className="text-xs font-semibold text-red-800 mb-1">Rejection Reason:</p>
-                      <p className="text-sm text-red-700">{userData.rejectionReason}</p>
+                      <p className="text-xs font-semibold text-red-800 mb-1">
+                        Rejection Reason:
+                      </p>
+                      <p className="text-sm text-red-700">
+                        {userData.rejectionReason}
+                      </p>
                     </div>
                   )}
 
                   {/* Action Buttons */}
-                  {userData.verificationStatus === "PENDING" && (
-                    <div className="flex gap-3 pt-2">
+                  <div className="flex gap-3 pt-2 justify-end">
+                    {userData.verificationStatus === "SUBMITTED" && (
+                      <>
+                        <button
+                          onClick={() => {
+                            handleReject(userData.id);
+                            handleCloseModal();
+                          }}
+                          className="px-6 py-2.5 border-2 border-red-500 text-red-500 rounded-lg hover:bg-red-50 font-medium text-sm"
+                          disabled={isUpdating}
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleApprove(userData.id);
+                            handleCloseModal();
+                          }}
+                          className="px-6 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium text-sm"
+                          disabled={isUpdating}
+                        >
+                          Approve
+                        </button>
+                      </>
+                    )}
+
+                    {userData.verificationStatus === "APPROVED" && (
                       <button
                         onClick={() => {
                           handleReject(userData.id);
                           handleCloseModal();
                         }}
-                        className="flex-1 px-4 py-2.5 border-2 border-red-500 text-red-500 rounded-lg hover:bg-red-50 font-medium text-sm"
+                        className="px-6 py-2.5 border-2 border-red-500 text-red-500 rounded-lg hover:bg-red-50 font-medium text-sm"
                         disabled={isUpdating}
                       >
                         Reject
                       </button>
-                      <button
-                        onClick={() => {
-                          handleApprove(userData.id);
-                          handleCloseModal();
-                        }}
-                        className="flex-1 px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium text-sm"
-                        disabled={isUpdating}
-                      >
-                        Approve
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">User not found</div>
+                <div className="text-center py-8 text-gray-500">
+                  User not found
+                </div>
               )}
             </div>
           </div>

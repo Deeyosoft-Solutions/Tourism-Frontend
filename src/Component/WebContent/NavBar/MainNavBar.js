@@ -117,7 +117,10 @@ const MainNavBar = () => {
           <Link to="/notifications" className="hover:text-blue-300 text-white">
             <FaBell className="lg:text-xl md:text-lg" />
           </Link>
-          <Link to="/localproducts/cart" className="hover:text-blue-300 text-white">
+          <Link
+            to="/localproducts/cart"
+            className="hover:text-blue-300 text-white"
+          >
             <FaShoppingCart className="lg:text-xl md:text-lg" />
           </Link>
           {/* <Link to="/cart" className="hover:text-blue-300 text-white">
@@ -272,9 +275,34 @@ const MainNavBar = () => {
                       My Cart
                     </button>
 
+                    <button
+                      onClick={() =>
+                        navigate("/my-bookings", {
+                          state: { userId: data?.id },
+                        })
+                      }
+                      className="w-full text-left px-4 py-2 flex items-center hover:bg-gray-50 transition-colors"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-3 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                        />
+                      </svg>
+                      My Bookings
+                    </button>
+
                     {/* Dashboard Option - Only for Admins */}
                     {["ADMIN", "SELLER", "HOST", "TRAVELAGENCY"].includes(
-                      normal
+                      normal,
                     ) && (
                       <button
                         onClick={() => navigate("/dashboard/home")}
@@ -297,10 +325,10 @@ const MainNavBar = () => {
                         {normal === "ADMIN"
                           ? "Dashboard"
                           : normal === "SELLER"
-                          ? "Add a product"
-                          : normal === "HOST"
-                          ? "Add a Accommodation"
-                          : "Add a Travel Package"}
+                            ? "Add a product"
+                            : normal === "HOST"
+                              ? "Add a Accommodation"
+                              : "Add a Travel Package"}
                       </button>
                     )}
                   </div>
